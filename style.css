@@ -22,17 +22,20 @@ body{
     align-items: center;
     justify-content: space-between;
     gap: 3vw;
+    margin-bottom: 3vw;
 }
 
 
 .container h2{
     color: #ffffff;
+    margin-top: 5vw;
 
 }
 
 .container button{
     background-color:#3498db ;
     color: #ffffff;
+    cursor: pointer;
     border: none;
     padding: 1vw;
     border-radius: 0.5vw;
@@ -41,7 +44,7 @@ body{
 }
 
 #map-container{
-    width: 90vw;
+    width: 70vw;
 
 }
 
@@ -70,11 +73,42 @@ body{
 }
 
 #map {
-    height: 500px;
+    height: 30vw;
     position: relative;
 }
 
 #map-container {
     position: relative;
-    height: 500px;
+    height: 30vw;
+}
+
+@media (max-width: 768px){
+
+
+    .container button{
+        width: 50vw;
+        font-size: 5vw;
+    }
+
+    .container h2{
+        color: #ffffff;
+        margin-top: 1vw;
+    
+    }
+
+    .container{
+        justify-content: space-around;
+    }
+
+    
+    #map-container{
+        width: 90vw;
+        height: 50vh;
+    }
+
+    #map{
+        height: 50vh;
+    }
+
+
 }
