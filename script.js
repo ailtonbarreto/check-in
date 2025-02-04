@@ -1,8 +1,21 @@
 let map;
 
+document.addEventListener("DOMContentLoaded", function() {
+
+
+    const btn_enviar =  document.getElementById("btn_enviar").style.display = "none";
+
+
+})
+
+
+
 function mostrarLocalizacao() {
 
     document.getElementById("spinner").style.display = "block";
+
+    btn_enviar.style.display = "block";
+    
     
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(iniciarMapa, mostrarErro);
