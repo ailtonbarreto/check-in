@@ -1,5 +1,4 @@
-
-*{
+* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -7,7 +6,7 @@
 
 
 
-body{
+body {
     display: flex;
     justify-content: center;
     text-align: center;
@@ -15,24 +14,25 @@ body{
     background-color: black;
 }
 
-.container{
+.container {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
     gap: 3vw;
+    margin-bottom: 3vw;
 }
 
 
-.container h2{
+.container h2 {
     color: #ffffff;
     margin-top: 4vw;
-
 }
 
-.container button{
-    background-color:#3498db ;
+.container button {
+    background-color: #3498db;
     color: #ffffff;
+    cursor: pointer;
     border: none;
     padding: 1vw;
     border-radius: 0.5vw;
@@ -41,12 +41,18 @@ body{
     cursor: pointer;
 }
 
-#map-container{
+#map-container {
     width: 50vw;
+    width: 15vw;
+    font-size: 1.2vw;
+}
+
+#map-container {
+    width: 70vw;
 
 }
 
-#map{
+#map {
     border-radius: 0.5vw;
 }
 
@@ -66,12 +72,17 @@ body{
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 #map {
-    height: 500px;
+    height: 30vw;
     position: relative;
 }
 
@@ -83,27 +94,53 @@ body{
 @media (max-width: 768px) {
 
 
-    .container button{
-        background-color:#3498db ;
+    .container button {
+        background-color: #3498db;
         color: #ffffff;
         border: none;
         padding: 1vw;
         border-radius: 0.5vw;
         width: 70vw;
-        font-size: 5vw;
+        height: 30vw;
     }
 
-    .container h2{
-        margin-top: 20vw;
-    }
+    @media (max-width: 768px) {
 
-    .container{
-        gap: 10vw;
-    }
 
-    #map-container{
-        width: 90vw;
-    
-    }
+        .container button {
+            width: 50vw;
+            font-size: 5vw;
+        }
 
+        .container h2 {
+
+            margin-top: 20vw;
+        }
+
+        .container {
+            gap: 10vw;
+        }
+
+        #map-container {
+            width: 90vw;
+
+        }
+
+
+        .container {
+            justify-content: space-around;
+        }
+
+
+        #map-container {
+            width: 90vw;
+            height: 50vh;
+        }
+
+        #map {
+            height: 50vh;
+        }
+
+
+    }
 }
