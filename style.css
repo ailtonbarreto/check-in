@@ -96,17 +96,15 @@ body {
 
 
         .container button {
-            width: 50vw;
+            width: 90vw;
+            padding: 3vw 0vw;
             font-size: 5vw;
         }
 
-        .container h2 {
-
-            margin-top: 20vw;
-        }
-
         .container {
-            gap: 10vw;
+            gap: 6vw;
+            padding: 7vw;
+            justify-content: space-around;
         }
 
         #map-container {
