@@ -1,22 +1,15 @@
 let map;
 
 document.addEventListener("DOMContentLoaded", function() {
+    const btn_enviar = document.getElementById("btn_enviar");
+    btn_enviar.style.display = "none";
 
-
-    const btn_enviar =  document.getElementById("btn_enviar").style.display = "none";
-
-
-})
-
-
+    btn_enviar.addEventListener("click", enviarCoordenadas);
+});
 
 function mostrarLocalizacao() {
-
     document.getElementById("spinner").style.display = "block";
 
-    btn_enviar.style.display = "block";
-    
-    
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(iniciarMapa, mostrarErro);
     } else {
@@ -35,21 +28,25 @@ function iniciarMapa(posicao) {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
     } else {
-
         map.setView([latitude, longitude], 13);
     }
-
 
     L.marker([latitude, longitude]).addTo(map)
         .bindPopup("<b>Você está aqui!</b>")
         .openPopup();
 
-
     document.getElementById("spinner").style.display = "none";
+
+    document.getElementById("btn_enviar").style.display = "block";
+
+    console.log(latitude,longitude);
+
+    document.getElementById("btn_enviar").setAttribute("data-lat", latitude);
+    document.getElementById("btn_enviar").setAttribute("data-lng", longitude);
 }
 
 function mostrarErro(erro) {
-    switch(erro.code) {
+    switch (erro.code) {
         case erro.PERMISSION_DENIED:
             alert("Usuário negou a solicitação de geolocalização.");
             break;
@@ -65,4 +62,38 @@ function mostrarErro(erro) {
     }
 
     document.getElementById("spinner").style.display = "none";
+}
+// ---------------------------------------------------------------------------------------------
+// FUNCAO EUCLIDIANA PARA ENVIAR PARA O BACKEND
+function enviarCoordenadas() {
+    const btn = document.getElementById("btn_enviar");
+    const latitude = btn.getAttribute("data-lat");
+    const longitude = btn.getAttribute("data-lng");
+
+    if (!latitude || !longitude) {
+        alert("Coordenadas não disponíveis.");
+        return;
+    }
+
+    const dados = {
+        latitude: latitude,
+        longitude: longitude
+    };
+
+    fetch("", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(dados)
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert("Localização enviada com sucesso!");
+        
+    })
+    .catch(error => {
+        alert("Erro ao enviar localização.");
+        console.error("Erro:", error);
+    });
 }
