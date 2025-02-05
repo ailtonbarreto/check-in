@@ -13,6 +13,7 @@ body {
     align-items: center;
     background-color: rgb(34, 44, 48);
     height: 100vh;
+    overflow-x: hidden;
 }
 
 .container {
@@ -24,7 +25,7 @@ body {
 }
 
 img{
-    width: 40vw;
+    width: 5vw;
 }
 
 .container button {
@@ -103,6 +104,10 @@ img{
             gap: 6vw;
             padding: 7vw;
             justify-content: space-around;
+        }
+
+        img{
+            width: 30vw;
         }
 
         #map-container {
