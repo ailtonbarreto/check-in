@@ -11,7 +11,7 @@ body {
     justify-content: center;
     text-align: center;
     align-items: center;
-    background-color: black;
+    background-color: rgb(34, 44, 48);
     height: 100vh;
 }
 
@@ -23,10 +23,8 @@ body {
     gap: 3vw;
 }
 
-
-.container h2 {
-    color: #ffffff;
-    margin-top: 4vw;
+img{
+    width: 40vw;
 }
 
 .container button {

@@ -9,17 +9,23 @@ document.addEventListener("DOMContentLoaded", function() {
 
 function mostrarLocalizacao() {
     document.getElementById("spinner").style.display = "block";
+    
 
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(iniciarMapa, mostrarErro);
     } else {
         alert("Geolocalização não é suportada por este navegador.");
     }
+
+    
+
 }
 
 function iniciarMapa(posicao) {
     let latitude = posicao.coords.latitude;
     let longitude = posicao.coords.longitude;
+
+
 
     if (!map) {
         map = L.map('map').setView([latitude, longitude], 13);
@@ -38,6 +44,7 @@ function iniciarMapa(posicao) {
     document.getElementById("spinner").style.display = "none";
 
     document.getElementById("btn_enviar").style.display = "block";
+
 
     console.log(latitude,longitude);
 
