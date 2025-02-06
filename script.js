@@ -2,9 +2,12 @@ let map;
 
 document.addEventListener("DOMContentLoaded", function() {
     const btn_enviar = document.getElementById("btn_enviar");
+    
     btn_enviar.style.display = "none";
 
     btn_enviar.addEventListener("click", enviarCoordenadas);
+
+    Start()
 });
 
 function mostrarLocalizacao() {
@@ -17,9 +20,31 @@ function mostrarLocalizacao() {
         alert("Geolocalização não é suportada por este navegador.");
     }
 
-    
+}
+
+
+function Start(){
+    const btn_start = document.getElementById("start-btn");
+    const nome = document.getElementById("nome");
+    const modal = document.querySelector(".modal");
+
+    btn_start.addEventListener("click", function(){
+
+        if(nome.value.trim() === ""){
+
+            alert("Preencha seu nome");
+
+        }else{
+            modal.style.display = "none";
+            sessionStorage.setItem("nome",nome.value)
+            mostrarLocalizacao();
+
+        };
+
+    });
 
 }
+
 
 function iniciarMapa(posicao) {
     let latitude = posicao.coords.latitude;
@@ -38,7 +63,7 @@ function iniciarMapa(posicao) {
     }
 
     L.marker([latitude, longitude]).addTo(map)
-        .bindPopup("<b>Você está aqui!</b>")
+        .bindPopup(`<b>${sessionStorage.getItem("nome")} Você está aqui!</b>`)
         .openPopup();
 
     document.getElementById("spinner").style.display = "none";
