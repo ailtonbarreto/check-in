@@ -111,7 +111,7 @@ function enviarCoordenadas() {
     const dados = {
         pessoa: nome,
         lat: latitude,
-        long: longitude
+        lon: longitude
     };
 
     fetch("https://api-localizacao-e69z.onrender.com/input", {
