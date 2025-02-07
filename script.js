@@ -101,6 +101,7 @@ function enviarCoordenadas() {
     const btn = document.getElementById("btn_enviar");
     const latitude = btn.getAttribute("data-lat");
     const longitude = btn.getAttribute("data-lng");
+    const nome = sessionStorage.getItem("nome");
 
     if (!latitude || !longitude) {
         alert("Coordenadas não disponíveis.");
@@ -108,11 +109,12 @@ function enviarCoordenadas() {
     }
 
     const dados = {
-        latitude: latitude,
-        longitude: longitude
+        pessoa: nome,
+        lat: latitude,
+        long: longitude
     };
 
-    fetch("", {
+    fetch("https://api-localizacao-e69z.onrender.com/input", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -122,7 +124,6 @@ function enviarCoordenadas() {
     .then(response => response.json())
     .then(data => {
         alert("Localização enviada com sucesso!");
-        
     })
     .catch(error => {
         alert("Erro ao enviar localização.");
