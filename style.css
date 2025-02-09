@@ -1,17 +1,21 @@
+:root{
+    --bg-color: #ffffff;
+    --color-text: #1869AB;
+    --color-btn: #19AF8C;
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-
-
 body {
     display: flex;
     justify-content: center;
     text-align: center;
     align-items: center;
-    background-color: rgb(34, 44, 48);
+    background-color: var(--bg-color);
     height: 100vh;
     overflow-x: hidden;
 }
@@ -24,8 +28,31 @@ body {
     gap: 3vw;
 }
 
-img{
-    width: 5vw;
+h1{
+    color: var(--color-text);
+    z-index: 999999;
+    position: absolute;
+    font-size: 10vw;
+    top: 10vw;
+}
+
+.imagem{
+    text-align: center;
+    position: absolute;
+    top: 40vw;
+    background-color: #1869AB;
+    border-radius: 4vw 4vw 0 0;
+    height: 100%;
+    width: 100vw;
+}
+
+#globo-img{
+    position: absolute;
+    top: -10vw;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60vw;
+
 }
 
 .container button {
@@ -96,79 +123,49 @@ img{
     position: absolute;
     justify-content: center;
     align-items: center;
-    background-color: rgb(34, 44, 48);
 }
 
 
 .form{
     display: flex;
-    height: 100%;
+    top: 30vw;
+    position: relative;
     flex-direction: column;
     justify-content: center;
-    gap: 1vw;
+    gap: 2vw;
 }
 
-.form button{
-    background-color: #3498db;
+.form label{
+    text-align: left;
+    color: var(--bg-color);
+    font-size: 4vw;
+}
+
+
+.form input{
+    font-size: 3vw;
+    padding: 2vw;
+    outline: none;
+    color: #3498db;
+    border-radius: 0.5vw;
+    font-weight: bold;
+    border: none;
+    text-transform: capitalize;
+}
+
+
+#start-btn{
+    background-color: var(--color-btn);
     color: #ffffff;
     cursor: pointer;
     border: none;
-    padding: 1vw;
+    padding: 2vw;
     border-radius: 0.5vw;
-    width: 20vw;
-    font-size: 1vw;
-}
-
-.form input{
-    font-size: 1vw;
-    padding: 0.5vw;
-    outline: none;
-    color: #3498db;
-    font-weight: bold;
-    text-transform: capitalize;
+    width: 60vw;
+    margin-top: 2vw;
+    font-size: 5vw;
 }
 
 
 
 /* ------------------------------------------- */
-
-@media (max-width: 768px) {
-
-
-        .container button {
-            width: 90vw;
-            padding: 3vw 0vw;
-            font-size: 5vw;
-        }
-
-        .container {
-            gap: 6vw;
-            padding: 7vw;
-            justify-content: space-around;
-        }
-
-        img{
-            width: 30vw;
-        }
-
-        #map-container {
-            width: 90vw;
-
-        }
-
-
-        .container {
-            justify-content: space-around;
-        }
-
-
-        #map-container {
-            width: 90vw;
-            height: 50vh;
-        }
-
-        #map {
-            height: 50vh;
-        }
-
-}

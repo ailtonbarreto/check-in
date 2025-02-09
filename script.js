@@ -63,7 +63,7 @@ function iniciarMapa(posicao) {
     }
 
     L.marker([latitude, longitude]).addTo(map)
-        .bindPopup(`<b>${sessionStorage.getItem("nome")} Você está aqui!</b>`)
+        .bindPopup(`<b>Você está aqui!</b>`)
         .openPopup();
 
     document.getElementById("spinner").style.display = "none";
