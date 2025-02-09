@@ -25,7 +25,10 @@ function mostrarLocalizacao() {
 
 function Start(){
     const btn_start = document.getElementById("start-btn");
+    const imagem = document.querySelector(".imagem");
     const nome = document.getElementById("nome");
+    const bora = document.getElementById("bora");
+
     const modal = document.querySelector(".modal");
 
     btn_start.addEventListener("click", function(){
@@ -35,6 +38,8 @@ function Start(){
             alert("Preencha seu nome");
 
         }else{
+            imagem.style.display = "none";
+            bora.style.display = "none";
             modal.style.display = "none";
             sessionStorage.setItem("nome",nome.value)
             mostrarLocalizacao();
