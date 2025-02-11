@@ -27,6 +27,8 @@ function Start(){
     const btn_start = document.getElementById("start-btn");
     const nome = document.getElementById("nome");
     const modal = document.querySelector(".modal");
+    const container = document.querySelector(".container");
+    const saudacao = document.getElementById("saudacao");
 
     btn_start.addEventListener("click", function(){
 
@@ -36,7 +38,9 @@ function Start(){
 
         }else{
             modal.style.display = "none";
+            container.style.display = "flex";
             sessionStorage.setItem("nome",nome.value)
+            saudacao.innerHTML = `Bem Vindo! <br> ${nome.value}`
             mostrarLocalizacao();
 
         };
