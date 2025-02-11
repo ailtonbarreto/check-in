@@ -27,7 +27,6 @@ function Start(){
     const btn_start = document.getElementById("start-btn");
     const imagem = document.querySelector(".imagem");
     const nome = document.getElementById("nome");
-    const bora = document.getElementById("bora");
 
     const modal = document.querySelector(".modal");
     const container = document.querySelector(".container");
@@ -41,7 +40,6 @@ function Start(){
 
         }else{
             imagem.style.display = "none";
-            bora.style.display = "none";
             modal.style.display = "none";
             container.style.display = "flex";
             sessionStorage.setItem("nome",nome.value)
