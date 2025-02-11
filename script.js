@@ -25,7 +25,10 @@ function mostrarLocalizacao() {
 
 function Start(){
     const btn_start = document.getElementById("start-btn");
+    const imagem = document.querySelector(".imagem");
     const nome = document.getElementById("nome");
+    const bora = document.getElementById("bora");
+
     const modal = document.querySelector(".modal");
     const container = document.querySelector(".container");
     const saudacao = document.getElementById("saudacao");
@@ -37,6 +40,8 @@ function Start(){
             alert("Preencha seu nome");
 
         }else{
+            imagem.style.display = "none";
+            bora.style.display = "none";
             modal.style.display = "none";
             container.style.display = "flex";
             sessionStorage.setItem("nome",nome.value)
@@ -60,7 +65,7 @@ function iniciarMapa(posicao) {
         map = L.map('map').setView([latitude, longitude], 13);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            // attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
     } else {
         map.setView([latitude, longitude], 13);
