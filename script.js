@@ -72,6 +72,7 @@ function iniciarMapa(posicao) {
 
     L.marker([latitude, longitude]).addTo(map)
         .bindPopup(`<b>Você está aqui!</b>`)
+        // .bindPopup(`<b>Você está aqui!</b><br><img src="map.png" width="200" alt="Mapa">`)
         .openPopup();
 
     document.getElementById("spinner").style.display = "none";

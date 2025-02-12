@@ -30,10 +30,18 @@ body {
 .container {
     display: none;
     flex-direction: column;
-    text-align: center;
     align-items: center;
 }
 
+#map-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 40vw;
+    width: 90vw;
+    z-index: 10;
+    margin: 0;
+}
 
 .titulo{
     display: flex;
@@ -65,35 +73,30 @@ body {
 
 
 #map_img{
-    display: flex;
-    position: absolute;
-    z-index: 10;
-    width: 30vw;
-    top: 3vw;
+    display: none;
 }
 
 #btn_enviar{
     background-color: var(--color-btn);
     color: #ffffff;
-    position: absolute;
     cursor: pointer;
     border: none;
     padding: 1vw;
     border-radius: 0.5vw;
     width: 15vw;
-    position: absolute;
-    bottom: 4vw;
     font-size: 1vw;
 }
 
 #map{
-    height: 20vw;
+    height: 30vw;
     width: 50vw;
     z-index: 50;
     border-radius: 0.5vw;
     top: 5vw;
     box-shadow: 3px 7px 5px 1px rgba(0, 0, 0, 0.2);
 }
+
+
 /* --------------------------------------------------------- */
 
 /* MODAL */
@@ -214,7 +217,6 @@ body {
         align-items: center;
         background-color: var(--bg-color);
         height: 100vh;
-        overflow-y: hidden;
         font-family: 'minha-fonte', sans-serif;
     }
 
@@ -270,7 +272,7 @@ body {
     }
     
     .form{
-        top: 30vw;
+        top: 20vw;
         position: relative;
         flex-direction: column;
         justify-content: center;
@@ -310,12 +312,10 @@ body {
 
     .container {
         display: none;
-        top: -30vw;
-        height: 100vh;
+        margin-top: 25vw;
         flex-direction: column;
-        text-align: center;
         align-items: center;
-        justify-content: space-between;
+        gap: 15vw;
     }
 
     #map_img{
@@ -328,17 +328,17 @@ body {
 
     #map-container {
         display: flex;
-        position: absolute;
+        flex-direction: column;
         text-align: center;
-        height: 50vw;
+        height: 80vw;
+        gap: 30vw;
         width: 90vw;
         z-index: 10;
-        top: 70vw;
         margin: 0;
     }
     
     #map {
-        height: 90vw;
+        height: 90vh;
         width: 90vw;
         position: relative;
         border-radius: 3vw;
@@ -348,8 +348,7 @@ body {
     #btn_enviar{
         background-color: var(--color-btn);
         color: #ffffff;
-        position: absolute;
-        bottom: 25vw;
+        position: relative;
         cursor: pointer;
         border: none;
         padding: 2vw;
