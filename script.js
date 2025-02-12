@@ -3,6 +3,7 @@ let map;
 document.addEventListener("DOMContentLoaded", function() {
     const btn_enviar = document.getElementById("btn_enviar");
     
+    
     btn_enviar.style.display = "none";
 
     btn_enviar.addEventListener("click", enviarCoordenadas);

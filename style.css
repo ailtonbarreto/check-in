@@ -22,18 +22,81 @@ body {
     text-align: center;
     align-items: center;
     background-color: var(--bg-color);
-    height: 100vh;
-    overflow-y: hidden;
     font-family: 'minha-fonte', sans-serif;
+    height: 100vh;
+    overflow: hidden;
 }
 
 .container {
-    display: flex;
+    display: none;
     flex-direction: column;
+    text-align: center;
     align-items: center;
-    justify-content: space-around;
-    gap: 3vw;
 }
+
+
+.titulo{
+    display: flex;
+    text-align: center;
+    width: 100vw;
+    align-items: center;
+    flex-direction: column;
+}
+
+.titulo h1{
+    position: fixed;
+    display: block;
+    top: 0;
+    text-align: center;
+    padding-top: 1vw;
+    padding-bottom: 20vw;
+    width: 100%;
+    background-color: var(--color-text);
+    color: var(--bg-color);
+    z-index: 2;
+    border-radius: 0 0 4vw 4vw;
+}
+
+#saudacao{
+    text-transform: capitalize;
+    margin: 0;
+    font-size: 2vw;
+}
+
+
+#map_img{
+    display: flex;
+    position: absolute;
+    z-index: 10;
+    width: 30vw;
+    top: 3vw;
+}
+
+#btn_enviar{
+    background-color: var(--color-btn);
+    color: #ffffff;
+    position: absolute;
+    cursor: pointer;
+    border: none;
+    padding: 1vw;
+    border-radius: 0.5vw;
+    width: 15vw;
+    position: absolute;
+    bottom: 4vw;
+    font-size: 1vw;
+}
+
+#map{
+    height: 20vw;
+    width: 50vw;
+    z-index: 50;
+    border-radius: 0.5vw;
+    top: 5vw;
+    box-shadow: 3px 7px 5px 1px rgba(0, 0, 0, 0.2);
+}
+/* --------------------------------------------------------- */
+
+/* MODAL */
 
 .modal{
     display: flex;
@@ -44,16 +107,12 @@ body {
     align-items: center;
 }    
 
-h1{
+.modal h1{
     color: var(--color-text);
     z-index: 999999;
     position: absolute;
     font-size: 4vw;
     top: 4vw;
-}
-
-.titulo h1{
-    display: none;
 }
 
 .imagem{
@@ -115,19 +174,6 @@ h1{
     margin-bottom: 0.5vw;
 }
 
-#map-container {
-    width: 50vw;
-    margin-bottom: 2vw;
-    font-size: 1.2vw;
-}
-
-#map-container {
-    width: 50vw;
-}
-
-#map {
-    border-radius: 0.5vw;
-}
 
 .spinner {
     position: absolute;
@@ -142,6 +188,7 @@ h1{
     height: 50px;
     display: none;
     animation: spin 1s linear infinite;
+    z-index: 10000000000000000;
 }
 
 @keyframes spin {
@@ -154,15 +201,6 @@ h1{
     }
 }
 
-/* #map {
-    height: 25vw;
-    position: relative;
-}
-
-#map-container {
-    position: relative;
-    height: 23vw;
-} */
 
 
 /* ------------------------------------------- */
@@ -189,7 +227,7 @@ h1{
         align-items: center;
     }    
     
-    h1{
+    .modal h1{
         color: var(--color-text);
         z-index: 999999;
         position: absolute;
@@ -245,15 +283,6 @@ h1{
         font-size: 4vw;
     }
 
-    .container {
-        display: none;
-        margin-top: 50vw;
-        height: 100vw;
-        flex-direction: column;
-        text-align: center;
-        justify-content: space-between;
-    }
-
     .titulo{
         display: flex;
         text-align: center;
@@ -265,8 +294,7 @@ h1{
         display: block;
         top: 0;
         text-align: center;
-        padding-top: 5vw;
-        padding-bottom: 90vw;
+        padding-bottom: 70vw;
         width: 100%;
         background-color: var(--color-text);
         color: var(--bg-color);
@@ -276,20 +304,37 @@ h1{
 
     #saudacao{
         text-transform: capitalize;
+        margin: 0;
+        font-size: 9vw;
+    }
+
+    .container {
+        display: none;
+        top: -30vw;
+        height: 100vh;
+        flex-direction: column;
+        text-align: center;
+        align-items: center;
+        justify-content: space-between;
     }
 
     #map_img{
+        display: flex;
         position: fixed;
         top: 20vw;
+        width: 90vw;
         z-index: 10;
     }
 
     #map-container {
         display: flex;
+        position: absolute;
         text-align: center;
-        height: 90vw;
+        height: 50vw;
         width: 90vw;
         z-index: 10;
+        top: 70vw;
+        margin: 0;
     }
     
     #map {
@@ -297,17 +342,19 @@ h1{
         width: 90vw;
         position: relative;
         border-radius: 3vw;
+        box-shadow: 3px 7px 5px 1px rgba(0, 0, 0, 0.2);
     }
     
     #btn_enviar{
         background-color: var(--color-btn);
         color: #ffffff;
+        position: absolute;
+        bottom: 25vw;
         cursor: pointer;
         border: none;
         padding: 2vw;
         border-radius: 1vw;
         width: 70vw;
-        margin-top: 4vw;
         font-size: 5vw;
     }
 
