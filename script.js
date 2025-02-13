@@ -73,8 +73,7 @@ function iniciarMapa(posicao) {
     const imagem = sessionStorage.getItem("foto_base64");
 
     L.marker([latitude, longitude]).addTo(map)
-        // .bindPopup(`<b>Você está aqui!</b>`)
-        .bindPopup(`<img src="${imagem}" width="100" alt="Mapa">`)
+        .bindPopup(`<img src="${imagem}" alt="Mapa" style="width: 3vw;">`)
         .openPopup();
 
     document.getElementById("spinner").style.display = "none";
