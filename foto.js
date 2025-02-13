@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", function() {
     const inputFoto = document.getElementById("input-foto");
     const photo = document.getElementById("photo");
-
+ 
 
     function salvarFoto(event) {
         const arquivo = event.target.files[0]; 
