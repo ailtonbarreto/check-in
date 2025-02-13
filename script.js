@@ -23,7 +23,6 @@ function mostrarLocalizacao() {
 
 }
 
-
 function Start(){
     const btn_start = document.getElementById("start-btn");
     const imagem = document.querySelector(".imagem");
@@ -113,7 +112,7 @@ function enviarCoordenadas() {
     const latitude = btn.getAttribute("data-lat");
     const longitude = btn.getAttribute("data-lng");
     const nome = sessionStorage.getItem("nome");
-    const foto = sessionStorage.getItem("foto_base64");  // Pegando a foto no formato base64
+    const foto = sessionStorage.getItem("foto_base64");
 
     if (!latitude || !longitude) {
         alert("Coordenadas não disponíveis.");
@@ -129,7 +128,7 @@ function enviarCoordenadas() {
         pessoa: nome,
         lat: latitude,
         lon: longitude,
-        foto: foto  // Adicionando a foto no corpo da requisição
+        foto: foto
     };
 
     fetch("https://api-localizacao-e69z.onrender.com/input", {
