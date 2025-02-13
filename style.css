@@ -137,7 +137,21 @@ body {
 
 }
 
-#start-btn{
+#custom-button{
+    background-color: #184bab;
+    color: #ffffff;
+    cursor: pointer;
+    border: none;
+    text-align: center;
+    font-size: 0.9vw;
+    margin-top: 1vw;
+    border-radius: 0.5vw;
+    padding: 0.5vw;
+}
+
+
+
+#start-btn {
     background-color: var(--color-btn);
     color: #ffffff;
     cursor: pointer;
@@ -168,6 +182,7 @@ body {
     align-items: left;
     flex-direction: column;
     justify-content: center;
+    z-index: 20000000000;
 }
 
 .form label{
@@ -255,6 +270,19 @@ body {
         width: 60vw;
     }
 
+    #custom-button{
+        background-color: var(--color-btn);
+        color: #ffffff;
+        cursor: pointer;
+        border: none;
+        text-align: center;
+        font-size: 5vw;
+        border-radius: 0.5vw;
+        padding: 1vw;
+        margin-top: 2vw;
+    }
+
+
     #start-btn{
         padding: 2vw;
         border-radius: 1vw;
@@ -272,7 +300,7 @@ body {
     }
     
     .form{
-        top: 20vw;
+        top: 30vw;
         position: relative;
         flex-direction: column;
         justify-content: center;

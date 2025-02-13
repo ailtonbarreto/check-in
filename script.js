@@ -69,10 +69,13 @@ function iniciarMapa(posicao) {
     } else {
         map.setView([latitude, longitude], 13);
     }
+    
+
+    const imagem = sessionStorage.getItem("foto_base64");
 
     L.marker([latitude, longitude]).addTo(map)
-        .bindPopup(`<b>Você está aqui!</b>`)
-        // .bindPopup(`<b>Você está aqui!</b><br><img src="map.png" width="200" alt="Mapa">`)
+        // .bindPopup(`<b>Você está aqui!</b>`)
+        .bindPopup(`<img src="${imagem}" width="100" alt="Mapa">`)
         .openPopup();
 
     document.getElementById("spinner").style.display = "none";
@@ -105,22 +108,28 @@ function mostrarErro(erro) {
     document.getElementById("spinner").style.display = "none";
 }
 // ---------------------------------------------------------------------------------------------
-// FUNCAO EUCLIDIANA PARA ENVIAR PARA O BACKEND
 function enviarCoordenadas() {
     const btn = document.getElementById("btn_enviar");
     const latitude = btn.getAttribute("data-lat");
     const longitude = btn.getAttribute("data-lng");
     const nome = sessionStorage.getItem("nome");
+    const foto = sessionStorage.getItem("foto_base64");  // Pegando a foto no formato base64
 
     if (!latitude || !longitude) {
         alert("Coordenadas não disponíveis.");
         return;
     }
 
+    if (!foto) {
+        alert("Foto não disponível.");
+        return;
+    }
+
     const dados = {
         pessoa: nome,
         lat: latitude,
-        lon: longitude
+        lon: longitude,
+        foto: foto  // Adicionando a foto no corpo da requisição
     };
 
     fetch("https://api-localizacao-e69z.onrender.com/input", {
@@ -132,10 +141,10 @@ function enviarCoordenadas() {
     })
     .then(response => response.json())
     .then(data => {
-        alert("Localização enviada com sucesso!");
+        alert("Localização e foto enviadas com sucesso!");
     })
     .catch(error => {
-        alert("Erro ao enviar localização.");
+        alert("Erro ao enviar localização e foto.");
         console.error("Erro:", error);
     });
 }
