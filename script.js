@@ -1,111 +1,115 @@
 let map;
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     const btn_enviar = document.getElementById("btn_enviar");
-    
-    
     btn_enviar.style.display = "none";
-
     btn_enviar.addEventListener("click", enviarCoordenadas);
 
-    Start()
+    Start();
 });
 
 function mostrarLocalizacao() {
     document.getElementById("spinner").style.display = "block";
-    
 
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(iniciarMapa, mostrarErro);
     } else {
         alert("Geolocalização não é suportada por este navegador.");
+        document.getElementById("spinner").style.display = "none";
     }
-
 }
 
-function Start(){
+function Start() {
     const btn_start = document.getElementById("start-btn");
     const imagem = document.querySelector(".imagem");
     const nome = document.getElementById("nome");
-
     const modal = document.querySelector(".modal");
     const container = document.querySelector(".container");
     const saudacao = document.getElementById("saudacao");
 
-    btn_start.addEventListener("click", function(){
-
-        if(nome.value.trim() === ""){
-
+    btn_start.addEventListener("click", function () {
+        if (nome.value.trim() === "") {
             alert("Preencha seu nome");
-
-        }else{
+        } else {
             imagem.style.display = "none";
             modal.style.display = "none";
             container.style.display = "flex";
-            sessionStorage.setItem("nome",nome.value)
-            saudacao.innerHTML = `Bem Vindo! <br> ${nome.value}`
+            sessionStorage.setItem("nome", nome.value);
+            saudacao.innerHTML = `Bem Vindo! <br> ${nome.value}`;
             mostrarLocalizacao();
-
-        };
-
+        }
     });
-
 }
-
 
 function iniciarMapa(posicao) {
     let latitude = posicao.coords.latitude;
     let longitude = posicao.coords.longitude;
 
-
-
     if (!map) {
         map = L.map('map').setView([latitude, longitude], 13);
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            // attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     } else {
         map.setView([latitude, longitude], 13);
     }
-    
 
     const imagem = sessionStorage.getItem("foto_base64");
 
+    let popupContent = `<p>Você está aqui!</p>`;
+    if (imagem) {
+        popupContent += `<img src="${imagem}" alt="Mapa" width= "100">`;
+    }
+
     L.marker([latitude, longitude]).addTo(map)
-        .bindPopup(`<img src="${imagem}" alt="Mapa" style="width: 3vw;">`)
+        .bindPopup(popupContent)
         .openPopup();
 
     document.getElementById("spinner").style.display = "none";
-
     document.getElementById("btn_enviar").style.display = "block";
-
-
-    console.log(latitude,longitude);
 
     document.getElementById("btn_enviar").setAttribute("data-lat", latitude);
     document.getElementById("btn_enviar").setAttribute("data-lng", longitude);
 }
 
 function mostrarErro(erro) {
+    let mensagem = "Erro desconhecido.";
     switch (erro.code) {
         case erro.PERMISSION_DENIED:
-            alert("Usuário negou a solicitação de geolocalização.");
+            mensagem = "Usuário negou a solicitação de geolocalização.";
             break;
         case erro.POSITION_UNAVAILABLE:
-            alert("Informações de localização indisponíveis.");
+            mensagem = "Informações de localização indisponíveis.";
             break;
         case erro.TIMEOUT:
-            alert("A solicitação de geolocalização excedeu o tempo limite.");
-            break;
-        case erro.UNKNOWN_ERROR:
-            alert("Erro desconhecido.");
+            mensagem = "A solicitação de geolocalização excedeu o tempo limite.";
             break;
     }
-
+    alert(mensagem);
     document.getElementById("spinner").style.display = "none";
 }
-// ---------------------------------------------------------------------------------------------
+
+document.addEventListener("DOMContentLoaded", function () {
+    const inputFoto = document.getElementById("input-foto");
+    const photo = document.getElementById("photo");
+
+    function salvarFoto(event) {
+        const arquivo = event.target.files[0];
+        if (arquivo) {
+            const leitorBase64 = new FileReader();
+
+            leitorBase64.onload = function (e) {
+                const imagemBase64 = e.target.result;
+                sessionStorage.setItem("foto_base64", imagemBase64);
+                photo.src = imagemBase64;
+                photo.style.display = "block";
+            };
+
+            leitorBase64.readAsDataURL(arquivo);
+        }
+    }
+
+    inputFoto.addEventListener("change", salvarFoto);
+});
+
 function enviarCoordenadas() {
     const btn = document.getElementById("btn_enviar");
     const latitude = btn.getAttribute("data-lat");
@@ -132,9 +136,7 @@ function enviarCoordenadas() {
 
     fetch("https://api-localizacao-e69z.onrender.com/input", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dados)
     })
     .then(response => response.json())
