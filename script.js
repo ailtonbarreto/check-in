@@ -1,6 +1,9 @@
 let map;
 
 document.addEventListener("DOMContentLoaded", function () {
+
+    sessionStorage.clear()
+
     const btn_enviar = document.getElementById("btn_enviar");
     btn_enviar.style.display = "none";
     btn_enviar.addEventListener("click", enviarCoordenadas);
@@ -54,13 +57,8 @@ function iniciarMapa(posicao) {
 
     const imagem = sessionStorage.getItem("foto_base64");
 
-    let popupContent = `<p>Você está aqui!</p>`;
-    if (imagem) {
-        popupContent += `<img src="${imagem}" alt="Mapa" width= "100">`;
-    }
-
     L.marker([latitude, longitude]).addTo(map)
-        .bindPopup(popupContent)
+        .bindPopup(`<img src="${imagem}" alt="Mapa" width= "100">`)
         .openPopup();
 
     document.getElementById("spinner").style.display = "none";
