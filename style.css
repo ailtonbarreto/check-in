@@ -151,6 +151,7 @@ body {
 
 #photo{
     text-align: center;
+    margin: 1vw;
 }
 
 #start-btn {
@@ -161,7 +162,6 @@ body {
     padding: 0.5vw;
     border-radius: 0.5vw;
     width: 20vw;
-    margin-top: 1vw;
     font-size: 1vw;
 }
 
@@ -272,7 +272,6 @@ body {
     }
 
     #custom-button{
-        background-color: var(--color-btn);
         color: #ffffff;
         cursor: pointer;
         border: none;

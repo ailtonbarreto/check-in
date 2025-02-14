@@ -87,18 +87,19 @@ function mostrarErro(erro) {
 
 document.addEventListener("DOMContentLoaded", function () {
     const inputFoto = document.getElementById("input-foto");
+    const inputbtn = document.getElementById("custom-button");
     const photo = document.getElementById("photo");
 
     function salvarFoto(event) {
         const arquivo = event.target.files[0];
         if (arquivo) {
             const leitorBase64 = new FileReader();
-
             leitorBase64.onload = function (e) {
                 const imagemBase64 = e.target.result;
                 sessionStorage.setItem("foto_base64", imagemBase64);
                 photo.src = imagemBase64;
                 photo.style.display = "block";
+                inputbtn.style.display = "none";
             };
 
             leitorBase64.readAsDataURL(arquivo);
