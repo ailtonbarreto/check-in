@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (spinner) spinner.style.display = "block";
 
-    fetch("http://localhost:3000/localizacoes")
+    fetch("https://api-localizacao-e69z.onrender.com/localizacoes")
       .then(response => response.json())
       .then(response => {
 
