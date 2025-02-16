@@ -4,6 +4,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     sessionStorage.clear()
 
+    fetch("https://api-localizacao-e69z.onrender.com/localizacoes")
+    .then(response => console.log("API acordada!"))
+    .catch(error => console.error("Erro ao acordar a API:", error));
+
+
     const btn_enviar = document.getElementById("btn_enviar");
     btn_enviar.style.display = "none";
     btn_enviar.addEventListener("click", enviarCoordenadas);
