@@ -161,7 +161,6 @@ function enviarCoordenadas() {
     })
     .catch(error => {
         document.getElementById("spinner").style.display = "none";
-        alert("Erro ao enviar localização e foto.");
         console.error("Erro:", error);
     });
 }
