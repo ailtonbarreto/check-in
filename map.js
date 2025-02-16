@@ -2,6 +2,8 @@ let map;
 
 document.addEventListener("DOMContentLoaded", function () {
 
+  sessionStorage.clear()
+
   const spinner = document.getElementById("spinner");
 
   function plotarPessoasNoMapa() {
@@ -21,7 +23,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         pessoas.forEach(pessoa => {
 
-          // Verificar se a imagem é Base64 ou uma URL
           const imagem = pessoa.foto.startsWith('data:image') ? pessoa.foto : `data:image/jpeg;base64,${pessoa.foto}`;
 
           L.marker([pessoa.lat, pessoa.lon]).addTo(map)
