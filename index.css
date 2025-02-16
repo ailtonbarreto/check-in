@@ -22,6 +22,7 @@ body {
     background-color: var(--bg-color);
     font-family: 'minha-fonte', sans-serif;
     height: 100vh;
+    overflow: hidden;
 }
 
 main{
@@ -70,6 +71,13 @@ main{
     line-height: 3vw;
 }
 
+.btn{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    gap: 1vw;
+}
+
 .btn button{
     background-color: var(--color-btn);
     color: #ffffff;
@@ -79,6 +87,10 @@ main{
     border-radius: 0.5vw;
     width: 20vw;
     font-size: 1vw;
+}
+
+#ver_mapa_btn{
+    background-color: #0580e4;
 }
 
 @media (max-width: 768px){

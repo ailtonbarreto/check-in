@@ -125,8 +125,34 @@ main {
 
 @media (max-width: 768px){
 
-  body{
-    display: none;
+  .container1 h1{
+    font-size: 7vw;
   }
+
+  .container1 p{
+    font-size: 5vw;
+  }
+
+  .container2{
+    display: flex;
+    position: absolute;
+    top: 27vw;
+    gap: 3vw;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    width: 95vw;
+    height: 70vh;
+    border-radius: 4vw;
+    padding: 2vw;
+  }
+
+  .btn button{
+    padding: 2vw;
+    border-radius: 1vw;
+    width: 70vw;
+    margin-top: 2vw;
+    font-size: 5vw;
+}
 
 }
