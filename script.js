@@ -33,14 +33,21 @@ function Start() {
     btn_start.addEventListener("click", function () {
         if (nome.value.trim() === "") {
             alert("Preencha seu nome");
-        } else {
-            imagem.style.display = "none";
-            modal.style.display = "none";
-            container.style.display = "flex";
-            sessionStorage.setItem("nome", nome.value);
-            saudacao.innerHTML = `Bem Vindo! <br> ${nome.value}`;
-            mostrarLocalizacao();
+            return;
         }
+
+        const imagemBase64 = sessionStorage.getItem("foto_base64");
+        if (!imagemBase64) {
+            alert("Você precisa fazer o upload de uma foto antes de continuar.");
+            return;
+        }
+
+        imagem.style.display = "none";
+        modal.style.display = "none";
+        container.style.display = "flex";
+        sessionStorage.setItem("nome", nome.value);
+        saudacao.innerHTML = `Bem Vindo! <br> ${nome.value}`;
+        mostrarLocalizacao();
     });
 }
 
@@ -133,6 +140,8 @@ function enviarCoordenadas() {
         foto: foto
     };
 
+    document.getElementById("spinner").style.display = "block";
+
     fetch("https://api-localizacao-e69z.onrender.com/input", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -140,10 +149,13 @@ function enviarCoordenadas() {
     })
     .then(response => response.json())
     .then(data => {
-        alert("Localização e foto enviadas com sucesso!");
+        document.getElementById("spinner").style.display = "none";
+        window.location.href = "./sucess.html";
     })
     .catch(error => {
+        document.getElementById("spinner").style.display = "none";
         alert("Erro ao enviar localização e foto.");
         console.error("Erro:", error);
     });
 }
+

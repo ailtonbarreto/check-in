@@ -1,0 +1,116 @@
+:root{
+    --bg-color: #ffffff;
+    --color-text: #1869AB;
+    --color-btn: #19AF8C;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+@font-face {
+    font-family: 'minha-fonte';
+    src: url('fonts/PlaypenSans-Regular.ttf') format('woff2');
+}
+
+
+body {
+    display: flex;
+    justify-content: center;
+    background-color: var(--bg-color);
+    font-family: 'minha-fonte', sans-serif;
+    height: 100vh;
+}
+
+main{
+    display: flex;
+    flex-direction: column;
+}
+
+.container1{
+    margin-top: 2vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    gap: 1vw;
+    align-items: center;
+    height: 50vh;
+}
+
+.container1 img{
+    width: 20%;
+}
+
+.container1 h1{
+    color: var(--color-text);
+}
+
+.container2{
+    background-color: var(--color-text);
+    height: 50vh;
+    width: 100vw;
+    border-radius: 4vw 4vw 0 0;
+    padding: 3vw;
+}
+
+.subcontainer{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+    gap: 3vw;
+}
+
+.subcontainer p{
+    color: var(--bg-color);
+    font-size: 1.5vw;
+    text-align: center;
+    line-height: 3vw;
+}
+
+.btn button{
+    background-color: var(--color-btn);
+    color: #ffffff;
+    cursor: pointer;
+    border: none;
+    padding: 0.5vw;
+    border-radius: 0.5vw;
+    width: 20vw;
+    font-size: 1vw;
+}
+
+@media (max-width: 768px){
+
+
+    .container1 img{
+        width: 90%;
+    }
+
+    #sucessimg{
+        margin-bottom: 5vw;
+    }
+
+    .subcontainer{
+        gap: 7vw;
+        justify-content: space-between;
+    }
+
+    .subcontainer p{
+        color: var(--bg-color);
+        margin-top: 10vw;
+        font-size: 5vw;
+        text-align: center;
+        line-height: 6vw;
+    }
+
+    .btn button{
+        padding: 2vw;
+        border-radius: 1vw;
+        width: 70vw;
+        margin-top: 2vw;
+        font-size: 5vw;
+    }
+
+}

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <link rel="shortcut icon" href="./placeholder.png" type="image/x-icon">
+    <script src="./script.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <title>Localização</title>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="titulo">
+
+            <h1 id="saudacao"></h1>
+
+            <img src="./map.png" alt="" id="map_img">
+
+        </div>
+
+        <div id="map-container">
+
+            <div id="spinner" class="spinner"></div>
+
+            <div id="map"></div>
+
+        </div>
+
+        <button id="btn_enviar">Realizar Check-in</button>
+
+    </div>
+
+    <div class="modal">
+
+        <h1>Bora participar?</h1>
+
+        <div class="imagem">
+
+            <img src="./globoimg.png" alt="" id="globo-img">
+
+        </div>
+
+        <div class="form">
+
+            <label for="nome">Nome:</label>
+
+            <input type="text" placeholder="Digite Seu Nome Completo" id="nome">
+
+            <label for="input-foto" id="custom-button">Carregar Foto</label>
+            <input type="file" id="input-foto" accept="image/*" style="display:none;">
+            <label id="photo" style="display:none; color:rgb(5, 219, 101)">Foto Carregada Com Sucesso!</label>
+
+            <button id="start-btn">Continuar</button>
+
+        </div>
+
+    </div>
+
+
+</body>
+
+</html>
