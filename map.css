@@ -1,0 +1,26 @@
+    /* Garantir que a página ocupe 100% da altura */
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      
+      /* Container para o mapa */
+      #map {
+        height: 100%;
+        width: 100%;
+      }
+      
+      /* Estilo do spinner de carregamento */
+      #spinner {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(255,255,255,0.8);
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-size: 18px;
+        display: none; /* Oculto por padrão */
+        z-index: 1000;
+      }

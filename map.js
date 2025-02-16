@@ -1,32 +1,44 @@
-function plotarPessoasNoMapa() {
+let map;
 
-    fetch("https://api-localizacao-e69z.onrender.com/localizacoes")
-        .then(response => response.json())
-        .then(pessoas => {
-  
-            if (!map) {
-   
-                map = L.map('map').setView([pessoas[0].lat, pessoas[0].lon], 13);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-            }
+document.addEventListener("DOMContentLoaded", function () {
 
+  const spinner = document.getElementById("spinner");
 
-            pessoas.forEach(pessoa => {
-           
-                L.marker([pessoa.lat, pessoa.lon]).addTo(map)
-                    .bindPopup(`
-                        <strong>${pessoa.nome}</strong><br>
-                        <img src="${pessoa.foto}" alt="${pessoa.nome}" width="100"><br>
-                        Latitude: ${pessoa.lat}<br>
-                        Longitude: ${pessoa.lon}
-                    `)
-                    .openPopup();
-            });
-        })
-        .catch(error => {
-            console.error("Erro ao buscar dados da API:", error);
-            alert("Houve um erro ao carregar as informações.");
+  function plotarPessoasNoMapa() {
+
+    if (spinner) spinner.style.display = "block";
+
+    fetch("http://localhost:3000/localizacoes")
+      .then(response => response.json())
+      .then(response => {
+
+        const pessoas = response.data;
+        if (!map) {
+
+          map = L.map("map").setView([pessoas[0].lat, pessoas[0].lon], 5);
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+        }
+
+        pessoas.forEach(pessoa => {
+
+          // Verificar se a imagem é Base64 ou uma URL
+          const imagem = pessoa.foto.startsWith('data:image') ? pessoa.foto : `data:image/jpeg;base64,${pessoa.foto}`;
+
+          L.marker([pessoa.lat, pessoa.lon]).addTo(map)
+            .bindPopup(`
+              <strong>${pessoa.pessoa}</strong><br>
+              <img src="${imagem}" alt="${pessoa.pessoa}" width="100"><br>
+            `);
         });
-}
+      })
+      .catch(error => {
+        console.error("Erro ao buscar dados da API:", error);
+        alert("Houve um erro ao carregar as informações.");
+      })
+      .finally(() => {
+        if (spinner) spinner.style.display = "none";
+      });
+  }
 
-plotarPessoasNoMapa();
+  plotarPessoasNoMapa();
+});

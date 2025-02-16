@@ -116,6 +116,8 @@ document.addEventListener("DOMContentLoaded", function () {
     inputFoto.addEventListener("change", salvarFoto);
 });
 
+
+
 function enviarCoordenadas() {
     const btn = document.getElementById("btn_enviar");
     const latitude = btn.getAttribute("data-lat");
