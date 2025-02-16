@@ -170,3 +170,20 @@ function enviarCoordenadas() {
     }
 }    
 
+
+
+//     fetch("https://api-localizacao-e69z.onrender.com/input", {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify(dados)
+//     })
+//     .then(response => response.json())
+//     .then(data => {
+//         document.getElementById("spinner").style.display = "none";
+//         window.location.href = "./sucess.html";
+//     })
+//     .catch(error => {
+//         document.getElementById("spinner").style.display = "none";
+//         console.error("Erro:", error);
+//     });
+// }
