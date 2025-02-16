@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const pessoas = response.data;
         if (!map) {
 
-          map = L.map("map").setView([pessoas[0].lat, pessoas[0].lon], 5);
+          map = L.map("map").setView([pessoas[0].lat, pessoas[0].lon], 3);
           L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
         }
 
