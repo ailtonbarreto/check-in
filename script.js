@@ -149,19 +149,24 @@ function enviarCoordenadas() {
 
     document.getElementById("spinner").style.display = "block";
 
-    fetch("https://api-localizacao-e69z.onrender.com/input", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dados)
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById("spinner").style.display = "none";
-        window.location.href = "./sucess.html";
-    })
-    .catch(error => {
-        document.getElementById("spinner").style.display = "none";
-        console.error("Erro:", error);
-    });
-}
+    async function enviarDados(dados) {
+        try {
+            const response = await fetch("https://api-localizacao-e69z.onrender.com/input", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(dados)
+            });
+    
+            if (!response.ok) throw new Error("Erro ao enviar os dados.");
+    
+            const data = await response.json();
+            
+            document.getElementById("spinner").style.display = "none";
+            window.location.href = "./sucess.html";
+        } catch (error) {
+            document.getElementById("spinner").style.display = "none";
+            console.error("Erro:", error);
+        }
+    }
+}    
 
