@@ -3,6 +3,7 @@ let map;
 document.addEventListener("DOMContentLoaded", function () {
 
     sessionStorage.clear()
+    localStorage.clear()
 
     const btn_enviar = document.getElementById("btn_enviar");
     btn_enviar.style.display = "none";
@@ -36,7 +37,7 @@ function Start() {
             return;
         }
 
-        const imagemBase64 = sessionStorage.getItem("foto_base64");
+        const imagemBase64 = localStorage.getItem("foto_base64");
         if (!imagemBase64) {
             alert("Você precisa fazer o upload de uma foto antes de continuar.");
             return;
@@ -62,7 +63,7 @@ function iniciarMapa(posicao) {
         map.setView([latitude, longitude], 13);
     }
 
-    const imagem = sessionStorage.getItem("foto_base64");
+    const imagem = localStorage.getItem("foto_base64");
 
     L.marker([latitude, longitude]).addTo(map)
         .bindPopup(`<img src="${imagem}" alt="Mapa" width= "100">`)
@@ -97,13 +98,14 @@ document.addEventListener("DOMContentLoaded", function () {
     const inputbtn = document.getElementById("custom-button");
     const photo = document.getElementById("photo");
 
+
     function salvarFoto(event) {
         const arquivo = event.target.files[0];
         if (arquivo) {
             const leitorBase64 = new FileReader();
             leitorBase64.onload = function (e) {
                 const imagemBase64 = e.target.result;
-                sessionStorage.setItem("foto_base64", imagemBase64);
+                localStorage.setItem("foto_base64", imagemBase64);
                 photo.src = imagemBase64;
                 photo.style.display = "block";
                 inputbtn.style.display = "none";
@@ -123,7 +125,7 @@ function enviarCoordenadas() {
     const latitude = btn.getAttribute("data-lat");
     const longitude = btn.getAttribute("data-lng");
     const nome = sessionStorage.getItem("nome");
-    const foto = sessionStorage.getItem("foto_base64");
+    const foto = localStorage.getItem("foto_base64");
 
     if (!latitude || !longitude) {
         alert("Coordenadas não disponíveis.");
@@ -160,3 +162,4 @@ function enviarCoordenadas() {
         console.error("Erro:", error);
     });
 }
+
