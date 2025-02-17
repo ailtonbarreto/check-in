@@ -98,20 +98,66 @@ document.addEventListener("DOMContentLoaded", function () {
     const inputbtn = document.getElementById("custom-button");
     const photo = document.getElementById("photo");
 
+    async function comprimirImagem(arquivo, qualidade = 0.8) {
+        return new Promise((resolve, reject) => {
+            const leitorBase64 = new FileReader();
+            leitorBase64.readAsDataURL(arquivo);
 
-    function salvarFoto(event) {
+            leitorBase64.onload = function (e) {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = function () {
+                    const canvas = document.createElement("canvas");
+                    const ctx = canvas.getContext("2d");
+
+                    // Definir tamanho base
+                    const MAX_WIDTH = 800;
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    function reduzirQualidade(qualidadeAtual) {
+                        return new Promise((resolve) => {
+                            canvas.toBlob((blob) => {
+                                if (blob.size <= 4 * 1024 * 1024) {
+                                    resolve(blob);
+                                } else if (qualidadeAtual > 0.1) {
+                                    resolve(reduzirQualidade(qualidadeAtual - 0.1));
+                                } else {
+                                    resolve(blob);
+                                }
+                            }, "image/jpeg", qualidadeAtual);
+                        });
+                    }
+
+                    reduzirQualidade(qualidade).then((blob) => {
+                        const leitorFinal = new FileReader();
+                        leitorFinal.readAsDataURL(blob);
+                        leitorFinal.onload = function (ev) {
+                            resolve(ev.target.result);
+                        };
+                    });
+                };
+                img.onerror = reject;
+            };
+            leitorBase64.onerror = reject;
+        });
+    }
+
+    async function salvarFoto(event) {
         const arquivo = event.target.files[0];
         if (arquivo) {
-            const leitorBase64 = new FileReader();
-            leitorBase64.onload = function (e) {
-                const imagemBase64 = e.target.result;
+            try {
+                const imagemBase64 = await comprimirImagem(arquivo);
                 localStorage.setItem("foto_base64", imagemBase64);
                 photo.src = imagemBase64;
                 photo.style.display = "block";
                 inputbtn.style.display = "none";
-            };
-
-            leitorBase64.readAsDataURL(arquivo);
+            } catch (error) {
+                console.error("Erro ao processar imagem:", error);
+            }
         }
     }
 
