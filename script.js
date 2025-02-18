@@ -66,8 +66,12 @@ function iniciarMapa(posicao) {
     const imagem = localStorage.getItem("foto_base64");
 
     L.marker([latitude, longitude]).addTo(map)
-        .bindPopup(`<img src="${imagem}" alt="Mapa" width= "100">`)
-        .openPopup();
+    .bindPopup(`
+        <strong>${nome.value}</strong><br>
+        <img src="${imagem}" alt="Mapa" width="100">
+    `)
+    .openPopup();
+
 
     document.getElementById("spinner").style.display = "none";
     document.getElementById("btn_enviar").style.display = "block";
