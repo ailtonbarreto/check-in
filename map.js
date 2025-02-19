@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
       })
       .catch(error => {
         console.error("Erro ao buscar dados da API:", error);
-        // alert("Houve um erro ao carregar as informações.");
+        alert("Houve um erro ao carregar as informações.");
       })
       .finally(() => {
         if (spinner) spinner.style.display = "none";
