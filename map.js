@@ -10,7 +10,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (spinner) spinner.style.display = "block";
 
-    fetch("https://api-localizacao-e69z.onrender.com/localizacoes")
+    // fetch("https://api-localizacao-e69z.onrender.com/localizacoes")
+    fetch(" http://srv729870.hstgr.cloud:3000/localizacoes")
+
       .then(response => response.json())
       .then(response => {
 

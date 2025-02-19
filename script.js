@@ -196,8 +196,10 @@ function enviarCoordenadas() {
 
     document.getElementById("spinner").style.display = "block";
 
+    
+    // fetch("https://api-localizacao-e69z.onrender.com/input", {
+    fetch("http://srv729870.hstgr.cloud:3000/input", {
 
-    fetch("https://api-localizacao-e69z.onrender.com/input", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dados)
