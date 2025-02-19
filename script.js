@@ -198,7 +198,7 @@ function enviarCoordenadas() {
 
     
     // fetch("https://api-localizacao-e69z.onrender.com/input", {
-    fetch("http://srv729870.hstgr.cloud:3000/input", {
+    fetch("145.223.94.8:3000/input", {
 
         method: "POST",
         headers: { "Content-Type": "application/json" },
