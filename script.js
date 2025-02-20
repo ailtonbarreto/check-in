@@ -197,8 +197,8 @@ function enviarCoordenadas() {
     document.getElementById("spinner").style.display = "block";
 
     
-    fetch("https://api-localizacao-e69z.onrender.com/input", {
-    // fetch("145.223.94.8:3000/input", {
+    // fetch("https://api-localizacao-e69z.onrender.com/input", {
+    fetch("http://145.223.94.8:3000/localizacoes", {
 
         method: "POST",
         headers: { "Content-Type": "application/json" },
