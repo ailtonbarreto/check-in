@@ -114,7 +114,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     const canvas = document.createElement("canvas");
                     const ctx = canvas.getContext("2d");
 
-                    // Definir tamanho base
                     const MAX_WIDTH = 800;
                     const scaleSize = MAX_WIDTH / img.width;
                     canvas.width = MAX_WIDTH;
