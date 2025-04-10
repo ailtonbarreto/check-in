@@ -10,8 +10,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (spinner) spinner.style.display = "block";
 
-    fetch("https://api-localizacao-e69z.onrender.com/localizacoes")
-    // fetch("http://145.223.94.8:3000/localizacoes")
+    // fetch("https://api-localizacao-e69z.onrender.com/localizacoes")
+    fetch("http://barretoapps.com.br:3004/localizacoes")
 
       .then(response => response.json())
       .then(response => {
