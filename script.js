@@ -196,7 +196,7 @@ function enviarCoordenadas() {
     document.getElementById("spinner").style.display = "block";
 
     
-    fetch("https://barretoapps.com.br/localizacoes", {
+    fetch("https://api-barretoapps.onrender.com/localizacoes", {
 
         method: "POST",
         headers: { "Content-Type": "application/json" },

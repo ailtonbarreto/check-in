@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (spinner) spinner.style.display = "block";
 
-    fetch("https://barretoapps.com.br/localizacoes")
+    fetch("https://api-barretoapps.onrender.com/localizacoes")
 
       .then(response => response.json())
       .then(response => {
