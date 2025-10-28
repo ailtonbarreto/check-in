@@ -95,7 +95,7 @@ main{
     background-color: #0580e4;
 }
 
-@media (max-width: 768px){
+@media (max-width: 768px) or (orientation: portrait){
 
 
     .container1 img{
