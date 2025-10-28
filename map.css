@@ -130,7 +130,7 @@ main {
   100% { transform: rotate(360deg); }
 }
 
-@media (max-width: 768px){
+@media (max-width: 768px) or (orientation: portrait){
 
   .container1 h1{
     font-size: 7vw;
