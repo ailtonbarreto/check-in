@@ -73,8 +73,6 @@ function erroGeo() {
     alert("Erro ao obter localização");
     document.getElementById("spinner").style.display = "none";
 }
-
-
 function enviarCoordenadas() {
     const btn = document.getElementById("btn_enviar");
 
@@ -87,25 +85,14 @@ function enviarCoordenadas() {
         return;
     }
 
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = "https://script.google.com/macros/s/AKfycbxvIjZe1A_PLB1vX688OO8aSEHL9hHcuQhnPCuNYzZGjTdGfV6dtyB9QaZ7s2RFy2hcZA/exec";
-
-    const dados = {
+    const params = new URLSearchParams({
         id: Date.now(),
         pessoa,
         lat,
         lon
-    };
+    });
 
-    for (const k in dados) {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = k;
-        input.value = dados[k];
-        form.appendChild(input);
-    }
-
-    document.body.appendChild(form);
-    form.submit();
+    window.location.href =
+      "https://script.google.com/macros/s/AKfycbyPIxf_cKQaEyqFs8MQx4S1Qf6IZtJm3r93vilLmEY43dIp42sRPon4QXBMBN4TIM6sJA/exec?"
+      + params.toString();
 }
