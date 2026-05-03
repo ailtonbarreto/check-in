@@ -184,7 +184,6 @@ body {
     align-items: left;
     flex-direction: column;
     justify-content: center;
-    gap: 1vw;
     z-index: 20000000000;
 }
 
