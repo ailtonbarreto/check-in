@@ -196,7 +196,9 @@ function enviarCoordenadas() {
     document.getElementById("spinner").style.display = "block";
 
     
-    fetch("https://api-amigos-pelo-mundo.onrender.com/input", {
+    // fetch("https://api-amigos-pelo-mundo.onrender.com/input", {
+    fetch("https://violet-sparrow-467994.hostingersite.com/input", {
+
 
         method: "POST",
         headers: { "Content-Type": "application/json" },
