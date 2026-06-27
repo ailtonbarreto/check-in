@@ -10,10 +10,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (spinner) spinner.style.display = "block";
 
-    // fetch("https://api-amigos-pelo-mundo.onrender.com/localizacoes")
-    fetch("https://violet-sparrow-467994.hostingersite.com/localizacoes")
-
-
+    fetch("https://api-amigos-pelo-mundo.onrender.com/localizacoes")
+    
       .then(response => response.json())
       .then(response => {
 
