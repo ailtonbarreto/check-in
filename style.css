@@ -180,18 +180,17 @@ body {
 .form{
     display: flex;
     top: 7vw;
+    gap: 0.5vw;
     position: relative;
-    align-items: left;
     flex-direction: column;
     justify-content: center;
-    z-index: 20000000000;
+    z-index: 200000;
 }
 
 .form label{
     text-align: left;
     color: var(--bg-color);
     font-size: 1vw;
-    margin-bottom: 0.5vw;
 }
 
 

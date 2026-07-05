@@ -2,45 +2,54 @@ let map;
 
 document.addEventListener("DOMContentLoaded", function () {
 
-  sessionStorage.clear()
+    sessionStorage.clear();
 
-  const spinner = document.getElementById("spinner");
+    const spinner = document.getElementById("spinner");
 
-  function plotarPessoasNoMapa() {
+    function plotarPessoasNoMapa() {
 
-    if (spinner) spinner.style.display = "block";
+        if (spinner) spinner.style.display = "block";
 
-    fetch("https://api-amigos-pelo-mundo.onrender.com/localizacoes")
-    
-      .then(response => response.json())
-      .then(response => {
+        fetch("https://api-amigos-pelo-mundo.onrender.com/localizacoes")
+            .then(response => response.json())
+            .then(response => {
 
-        const pessoas = response.data;
-        if (!map) {
+                const pessoas = response.data;
 
-          map = L.map("map").setView([pessoas[0].lat, pessoas[0].lon], 2.5);
-          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-        }
+                if (!pessoas || pessoas.length === 0) {
+                    alert("Nenhuma localização encontrada.");
+                    return;
+                }
 
-        pessoas.forEach(pessoa => {
+                if (!map) {
+                    map = L.map("map").setView([pessoas[0].lat, pessoas[0].lon], 2.5);
 
-          const imagem = pessoa.foto.startsWith('data:image') ? pessoa.foto : `data:image/jpeg;base64,${pessoa.foto}`;
+                    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                        attribution: "&copy; OpenStreetMap contributors"
+                    }).addTo(map);
+                }
 
-          L.marker([pessoa.lat, pessoa.lon]).addTo(map)
-            .bindPopup(`
-              <strong>${pessoa.pessoa}</strong><br>
-              <img src="${imagem}" alt="${pessoa.pessoa}" width="100"><br>
-            `);
-        });
-      })
-      .catch(error => {
-        console.error("Erro ao buscar dados da API:", error);
-        alert("Houve um erro ao carregar as informações.");
-      })
-      .finally(() => {
-        if (spinner) spinner.style.display = "none";
-      });
-  }
+                pessoas.forEach(pessoa => {
 
-  plotarPessoasNoMapa();
+                    L.marker([pessoa.lat, pessoa.lon])
+                        .addTo(map)
+                        .bindPopup(`
+                            <strong>${pessoa.pessoa}</strong>
+                        `);
+
+                });
+
+            })
+            .catch(error => {
+                console.error("Erro ao buscar dados da API:", error);
+                alert("Houve um erro ao carregar as informações.");
+            })
+            .finally(() => {
+                if (spinner) spinner.style.display = "none";
+            });
+
+    }
+
+    plotarPessoasNoMapa();
+
 });
