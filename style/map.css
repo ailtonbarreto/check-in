@@ -44,7 +44,7 @@ main {
   border-radius: 0 0 4vw 4vw;
   height: 50vh;
   width: 100%;
-  padding: 1vw 0;
+  padding: 2vw 0;
 }
 
 .container1 h1 {
@@ -56,12 +56,12 @@ main {
 .container2 {
   display: flex;
   position: absolute;
-  top: 7vw;
+  top: 5vw;
   justify-content: center;
   flex-direction: column;
   align-items: center;
   width: 85vw;
-  height: 40vw;
+  height: 45vw;
   border-radius: 4vw;
   padding: 2vw;
 }

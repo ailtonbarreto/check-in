@@ -1,4 +1,5 @@
 let map;
+let marcadores = {};
 
 document.addEventListener("DOMContentLoaded", function () {
 
@@ -16,12 +17,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 const pessoas = response.data;
 
-                if (!pessoas || pessoas.length === 0) {
-                    alert("Nenhuma localização encontrada.");
-                    return;
-                }
+                if (!pessoas || pessoas.length === 0) return;
 
+                // Cria o mapa apenas uma vez
                 if (!map) {
+
                     map = L.map("map").setView([pessoas[0].lat, pessoas[0].lon], 2.5);
 
                     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -29,26 +29,47 @@ document.addEventListener("DOMContentLoaded", function () {
                     }).addTo(map);
                 }
 
+                // Guarda quem veio da API
+                const pessoasAtuais = new Set();
 
                 pessoas.forEach(pessoa => {
 
-                    L.marker([pessoa.lat, pessoa.lon])
-                        .addTo(map)
-                        .bindTooltip(
-                            `<strong>${pessoa.pessoa}</strong>`,
-                            {
-                                permanent: true,
-                                direction: "top",
-                                offset: [0, -10]
-                            }
-                        );
+                    const id = pessoa.pessoa; // ou pessoa.id se existir
+
+                    pessoasAtuais.add(id);
+                    
+                    if (marcadores[id]) {
+
+                        marcadores[id].setLatLng([pessoa.lat, pessoa.lon]);
+
+                    } else {
+
+                        marcadores[id] = L.marker([pessoa.lat, pessoa.lon])
+                            .bindTooltip(
+                                `<strong>${pessoa.pessoa}</strong>`,
+                                {
+                                    permanent: true,
+                                    direction: "top",
+                                    offset: [0, -10]
+                                }
+                            )
+                            .addTo(map);
+                    }
+
+                });
+
+                Object.keys(marcadores).forEach(id => {
+
+                    if (!pessoasAtuais.has(id)) {
+                        map.removeLayer(marcadores[id]);
+                        delete marcadores[id];
+                    }
 
                 });
 
             })
             .catch(error => {
                 console.error("Erro ao buscar dados da API:", error);
-                alert("Houve um erro ao carregar as informações.");
             })
             .finally(() => {
                 if (spinner) spinner.style.display = "none";
@@ -57,5 +78,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     plotarPessoasNoMapa();
+
+    setInterval(plotarPessoasNoMapa, 10000);
 
 });
