@@ -1,57 +1,49 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Onde Estão Meus Amigos?</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="style/map.css">
     <link rel="shortcut icon" href="./placeholder.png" type="image/x-icon">
-    <link rel="stylesheet" href="index.css">
+    <script src="./js/map.js"></script>
+    <title>Mapa</title> 
 </head>
+
 <body>
 
-<main>
+    <main>
 
-    <div class="container1">
+        <div class="container1">
 
-        <h1>Seja Bem Vindo!</h1>
+            <h1>Última Posição Conhecida</h1>
 
-        <img src="./startimg.png" alt="">
-
-
-    </div>
-
-    <div class="container2">
-
-        <div class="subcontainer">
-
-            <div class="paragrafo">
-
-                <p>
-    
-                    Você foi selecionado para participar do projeto “Amigos Pelo Mundo”, onde quero saber como os meus amigos estão espalhados pelo mundo!
+        </div>
         
-                </p>
-    
-            </div>
-    
-            <div class="btn">
-    
-                <button onclick="window.location.href='home.html'">Participar</button>
 
-                <button onclick="window.location.href='map.html'" id="ver_mapa_btn">Ver Mapa</button>
+        <div class="loader-container">
 
-    
+            <div id="spinner"></div>
+
+        </div>
+          
+
+        <div class="container2">
+
+            <div class="subcontainer">
+
+                <div id="map"></div>
             </div>
-    
+
 
         </div>
 
 
-    </div>
+    </main>
 
-</main>
 
-    
 </body>
 
 </html>

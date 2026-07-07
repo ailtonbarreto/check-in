@@ -12,7 +12,7 @@
 
 @font-face {
   font-family: 'minha-fonte';
-  src: url('fonts/PlaypenSans-Regular.ttf') format('woff2');
+  src: url('../fonts/PlaypenSans-Regular.ttf') format('woff2');
 }
 
 body {

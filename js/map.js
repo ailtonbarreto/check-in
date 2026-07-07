@@ -29,15 +29,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     }).addTo(map);
                 }
 
-                // pessoas.forEach(pessoa => {
-
-                //     L.marker([pessoa.lat, pessoa.lon])
-                //         .addTo(map)
-                //         .bindPopup(`
-                //             <strong>${pessoa.pessoa}</strong>
-                //         `);
-
-                // });
 
                 pessoas.forEach(pessoa => {
 
