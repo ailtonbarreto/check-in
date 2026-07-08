@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="./js/map.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
+    <title>Mapa</title>
+</head>
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+    :root {
+        --color-text: #000000;
+        --color-shadow: #363949;
+        --color-background: #ffffff;
+        --card-border-radius: 1rem;
+        --card-padding: 1.1rem 1rem;
+        --box-shadow: 0.2rem 0.2rem 1rem #363949;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        outline: 0;
+        border: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Poppins', sans-serif;
+        font-size: 0.88rem;
+        user-select: none;
+        background: var(--color-background);
+        font-size: 14px;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100vh;
+
+    }
+
+    .container {
+        display: grid;
+        width: 97%;
+        gap: 1rem;
+        grid-template-columns: auto;
+    }
+
+    .analyse {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 1.6rem;
+    }
+
+    .analyse>div {
+        background: rgba(255, 255, 255, 0.13);
+        color: var(--color-text);
+        backdrop-filter: blur(10px);
+        padding: var(--card-padding);
+        border-radius: var(--card-border-radius);
+        box-shadow: var(--box-shadow);
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        text-align: left;
+        height: 8vw;
+    }
+
+
+    .analyse>div:hover {
+        box-shadow: 0.2rem 0.5rem 1rem var(--color-shadow);
+    }
+
+
+    .analyse h3 {
+        margin-left: 0.6rem;
+        font-size: 1rem;
+    }
+
+    .charts-container {
+        height: 70vh;
+        display: flex;
+        justify-content: space-between;
+        flex-direction: row;
+        gap: 1.6rem;
+
+        .first-line {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.6rem;
+            width: 50%;
+
+            .chart_card {
+                height: 17vw;
+            }
+
+            .line-chart {
+                grid-column: span 2;
+                height: 16.5vw;
+            }
+        }
+
+        .second-line {
+            width: 50%;
+
+            .chart_card {
+                height: 100%;
+            }
+
+            iframe {
+                width: 100%;
+                height: 95%;
+            }
+        }
+
+    }
+
+    .chart_card {
+        background: rgba(255, 255, 255, 0.13);
+        color: var(--color-text);
+        backdrop-filter: blur(10px);
+        border-radius: var(--card-border-radius);
+        box-shadow: var(--box-shadow);
+        padding: 0.5vw;
+
+    }
+
+    #map {
+        width: 100%;
+        height: 100%;
+        border-radius: 1vw;
+    }
+
+
+    /* ----------------------------------------------------------------------- */
+
+    @media screen and (max-width: 768px),
+    screen and (orientation: portrait) {
+
+        .container {
+
+            width: 100%;
+            height: 100vh;
+            grid-template-columns: 1fr;
+            padding: 3vw;
+        }
+
+
+        .analyse {
+            grid-template-columns: 1fr;
+            gap: 5vw;
+
+        }
+
+        .analyse>div {
+            height: 20vw;
+        }
+
+        .charts-container {
+            height: auto;
+            display: flex;
+            justify-content: space-between;
+            flex-direction: column;
+            gap: 1.6rem;
+
+            .first-line {
+                display: flex;
+                flex-direction: column;
+                gap: 1.6rem;
+                width: 100%;
+
+                .chart_card {
+                    height: auto;
+                    padding: 3vw;
+                    margin-top: 0;
+                    height: 35vh;
+                }
+
+                .line-chart {
+                    height: auto;
+                    padding: 3vw;
+                    margin-top: 0;
+                    height: 35vh;
+                }
+            }
+
+            .second-line {
+                width: 100%;
+                margin-bottom: 5vw;
+
+                .chart_card {
+                    height: auto;
+                    padding: 3vw;
+                    margin-top: 0;
+                    height: 35vh;
+                }
+
+            }
+
+        }
+
+    }
+</style>
+
+<body>
+
+    <div class="container">
+
+
+        <div class="analyse">
+
+            <div class="sales">
+
+                <h3>KPI 1</h3>
+                <h1 id="qtd_mov">0</h1>
+
+            </div>
+
+            <div class="visits">
+
+                <h3>KPI 2</h3>
+                <h1 id="valor_entrada">0</h1>
+
+            </div>
+
+            <div class="searches">
+
+                <h3>KPI 3</h3>
+                <h1 id="valor_saida">0</h1>
+
+            </div>
+
+            <div class="searches">
+
+                <h3>KPI 4</h3>
+                <h1 id="saldo">0</h1>
+
+            </div>
+
+            <div class="searches">
+
+                <h3>KPI 5</h3>
+                <h1 id="kpi5">0</h1>
+
+            </div>
+        </div>
+
+
+        <div class="charts-container">
+
+            <div class="first-line">
+
+                <div class="chart_card">
+
+                    <h3>Gráfico 1</h3>
+
+                    <div id="pie" style="width: 100%; height: 100%;"></div>
+
+
+                </div>
+
+                <div class="chart_card">
+
+                    <h3>Gráfico 2</h3>
+
+                    <div id="bar_saida" style="width: 100%; height: 100%;"></div>
+
+
+                </div>
+
+                <div class="chart_card line-chart">
+
+                    <h3>Gráfico 3</h3>
+
+                    <div id="line" style="width: 100%; height: 100%;"></div>
+
+
+                </div>
+
+
+            </div>
+
+
+            <div class="second-line">
+
+
+                <div class="chart_card">
+
+
+                    <div id="map"></div>
+
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+
+<!-- <script>
+
+    if (sessionStorage.getItem("logon") !== "1") {
+        alert("Acesso não autorizado! Você será redirecionado para a tela de login.");
+        window.location.href = "index.html";
+    }
+</script> -->
+
+</html>
