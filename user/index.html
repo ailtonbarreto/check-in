@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="./placeholder.png" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+    <title>Rastreamento</title>
+</head>
+
+<body>
+
+    <div id="app">
+
+        <div class="container" style="padding-top: 10vw ;">
+
+
+            <img src="./map.png" alt="" id="map_img">
+
+        </div>
+
+
+        <div class="titulo">
+
+            <h1 id="saudacao"></h1>
+
+
+
+            <div class="form">
+
+                <h1 style="color: var( --primary-color)">Entrar</h1>
+
+                <input type="text" placeholder="Digite Seu Nome" id="nome">
+
+                <button id="start-btn" style="position: relative; bottom: 0; cursor: pointer;">Continuar</button>
+
+            </div>
+
+        </div>
+
+
+
+
+    </div>
+
+    <script>
+
+        document.getElementById('start-btn').addEventListener('click', function () {
+            const nome = document.getElementById('nome').value;
+            if (nome.trim() !== '') {
+                localStorage.setItem('nome', nome);
+                window.location.href = 'home.html';
+            } else {
+                alert('Por favor, digite seu nome.');
+            }
+        });
+
+    </script>
+
+
+</body>
+
+</html>
