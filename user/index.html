@@ -5,42 +5,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" href="./placeholder.png" type="image/x-icon">
-    <link rel="stylesheet" href="style.css">
-    <title>Rastreamento</title>
+    <!-- <script src="script.js"></script> -->
+    <link rel="stylesheet" href="index.css">
+    <title>Login</title>
 </head>
 
 <body>
 
-    <div id="app">
+    <div class="modal">
 
-        <div class="container" style="padding-top: 10vw ;">
+        <h1>Bem Vindo!</h1>
 
+        <div class="imagem">
 
-            <img src="./map.png" alt="" id="map_img">
-
-        </div>
-
-
-        <div class="titulo">
-
-            <h1 id="saudacao"></h1>
-
-
-
-            <div class="form">
-
-                <h1 style="color: var( --primary-color)">Entrar</h1>
-
-                <input type="text" placeholder="Digite Seu Nome" id="nome">
-
-                <button id="start-btn" style="position: relative; bottom: 0; cursor: pointer;">Continuar</button>
-
-            </div>
+            <img src="./globoimg.png" alt="" id="globo-img">
 
         </div>
 
+        <div class="form">
 
+            <label for="nome">Usuário:</label>
 
+            <input type="text" placeholder="Digite seu Usuário" id="nome">
+
+            <label for="nome">Senha:</label>
+
+            <input type="password" placeholder="*****" id="senha">
+
+            <button id="start-btn">Entrar</button>
+
+        </div>
 
     </div>
 
@@ -57,7 +51,6 @@
         });
 
     </script>
-
 
 </body>
 
