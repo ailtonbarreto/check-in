@@ -172,9 +172,9 @@ document.addEventListener("DOMContentLoaded", function () {
                         .bindTooltip(
                             `<strong>${pessoa.pessoa}</strong>`,
                             {
-                                permanent: true,
+                                permanent: false,
                                 direction: "top",
-                                offset: [0, -10]
+                                offset: [0, -34]
                             }
                         )
                         .addTo(map);
