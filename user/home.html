@@ -1,37 +1,293 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Posicionamento em Tempo Real</title>
-    <script src="script.js"></script>
-    <link rel="shortcut icon" href="placeholder.png" type="image/x-icon">
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-    <link rel="stylesheet" href="home.css">
+    <link id="leaflet-css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 
+    <style>
+
+        :root {
+            --primary-color: #1869ab;
+            --text-color: #fff;
+            --font-family: Arial, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50vh;
+            background: var(--primary-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: start;
+            border-radius: 0 0 4vw 4vw;
+            z-index: 10;
+            padding: 1.5rem;
+        }
+
+        #status {
+            font-weight: 700;
+            font-size: 1.05rem;
+            text-align: center;
+            z-index:  100;
+        }
+        #map {
+            display: block;
+            width: 90vw;
+            height: 60vh;
+            margin: 20vh auto 1rem;
+            border-radius: 1rem;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+            overflow: hidden;
+            background: #eaeaea;
+            z-index: 50;
+        }
+
+        #exit-btn {
+            position: fixed;
+            bottom: 1.6rem;
+            width: 50vw;
+            background-color: var(--primary-color);
+            padding: 0.7rem;
+            color: var(--text-color);
+            border-radius: 0.4rem;
+            border: none;
+            font-size: 1rem;
+            z-index: 70;
+            cursor: pointer;
+        }
+
+
+    </style>
 </head>
 
 <body>
 
     <div class="container">
-
         <div id="status">Aguardando localização...</div>
-
-        <img src="globoimg.png">
-
     </div>
 
-    <div id="app">
+    <div id="map" aria-label="Mapa"></div>
 
+    <button id="exit-btn" onclick="location.href='index.html'">Sair</button>
 
-        <div id="map"></div>
+    <!-- Leaflet JS (CDN) -->
+    <script id="leaflet-js" src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 
-        <button id="exit-btn" onclick="window.location.href='index.html'">Sair</button>
+    <!-- Fallback simples caso CDN seja bloqueado -->
+    <script>
+        (function () {
+            // Se Leaflet não carregar via CDN, tenta carregar local (coloque vendor/leaflet/leaflet.js e leaflet.css no servidor)
+            function loadLocalLeaflet() {
+                if (typeof L !== 'undefined') return;
+                var link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = '/vendor/leaflet/leaflet.css';
+                document.head.appendChild(link);
+                var s = document.createElement('script');
+                s.src = '/vendor/leaflet/leaflet.js';
+                s.onload = function () { console.info('Leaflet carregado localmente'); };
+                s.onerror = function () { console.error('Falha ao carregar Leaflet (CDN e local)'); };
+                document.head.appendChild(s);
+            }
 
-    </div>
+            // Se o elemento script do CDN falhar ao carregar, onerror não funciona em todos os navegadores para tags já inseridas,
+            // então verificamos após um pequeno timeout se L está definido; se não, tentamos o local.
+            setTimeout(function () {
+                if (typeof L === 'undefined') {
+                    console.warn('Leaflet não detectado via CDN, tentando fallback local...');
+                    loadLocalLeaflet();
+                }
+            }, 800);
+        })();
+    </script>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const statusDiv = document.getElementById("status");
+            const mapEl = document.getElementById("map");
+
+            if (!mapEl) {
+                console.error("Elemento #map não encontrado");
+                statusDiv.textContent = "Erro: elemento do mapa não encontrado.";
+                return;
+            }
+
+            // Aguarda até que L esteja disponível (caso o fallback local esteja carregando)
+            function whenLeafletReady(cb, timeout = 3000) {
+                const start = Date.now();
+                (function check() {
+                    if (typeof L !== 'undefined') return cb();
+                    if (Date.now() - start > timeout) {
+                        console.error("Leaflet não carregou dentro do tempo.");
+                        statusDiv.textContent = "Erro: biblioteca de mapas não carregou.";
+                        return;
+                    }
+                    setTimeout(check, 100);
+                })();
+            }
+
+            whenLeafletReady(initMap, 5000);
+
+            function initMap() {
+                // Inicializa mapa com vista padrão (centro do Brasil) para evitar "oceano" inicial
+                const map = L.map("map", { zoomControl: true }).setView([-14.235, -51.925], 4);
+
+                L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                    maxZoom: 25,
+                    attribution: "© OpenStreetMap"
+                }).addTo(map);
+
+                // Força recalcular tamanho (útil se o container foi alterado por CSS)
+                setTimeout(() => map.invalidateSize(), 200);
+
+                let marker = null;
+                let primeiraAtualizacao = true;
+                let ultimaLatitude = null;
+                let ultimaLongitude = null;
+                let watchId = null;
+
+                function atualizarLocalizacao(pos) {
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+
+                    ultimaLatitude = lat;
+                    ultimaLongitude = lon;
+
+                    statusDiv.textContent = "Localização atualizada";
+
+                    if (!marker) {
+                        marker = L.marker([lat, lon]).addTo(map).bindPopup("Você está aqui!");
+                    } else {
+                        marker.setLatLng([lat, lon]);
+                    }
+
+                    if (primeiraAtualizacao) {
+                        map.setView([lat, lon], 17);
+                        primeiraAtualizacao = false;
+                    } else {
+                        map.panTo([lat, lon]);
+                    }
+
+                    setTimeout(() => map.invalidateSize(), 100);
+                }
+
+                function tratarErroGeolocalizacao(err) {
+                    console.warn("Erro geolocalização:", err);
+                    if (err && err.code !== undefined) {
+                        switch (err.code) {
+                            case err.PERMISSION_DENIED:
+                                statusDiv.textContent = "Permissão negada para acessar localização.";
+                                break;
+                            case err.POSITION_UNAVAILABLE:
+                                statusDiv.textContent = "Posição indisponível.";
+                                break;
+                            case err.TIMEOUT:
+                                statusDiv.textContent = "Tempo esgotado ao obter localização.";
+                                break;
+                            default:
+                                statusDiv.textContent = "Erro ao obter localização.";
+                        }
+                    } else {
+                        statusDiv.textContent = "Erro ao obter localização.";
+                    }
+                }
+
+                function iniciarWatch() {
+                    if (!("geolocation" in navigator)) {
+                        statusDiv.textContent = "Geolocalização não suportada pelo navegador.";
+                        return;
+                    }
+
+                    // Tenta obter posição inicial rápida
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            atualizarLocalizacao(pos);
+                            if (watchId === null) {
+                                watchId = navigator.geolocation.watchPosition(
+                                    atualizarLocalizacao,
+                                    tratarErroGeolocalizacao,
+                                    { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+                                );
+                            }
+                        },
+                        (err) => {
+                            tratarErroGeolocalizacao(err);
+                            if (watchId === null) {
+                                watchId = navigator.geolocation.watchPosition(
+                                    atualizarLocalizacao,
+                                    tratarErroGeolocalizacao,
+                                    { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+                                );
+                            }
+                        },
+                        { enableHighAccuracy: true, maximumAge: 0, timeout: 7000 }
+                    );
+                }
+
+                iniciarWatch();
+
+                // Envio periódico para API
+                async function enviarPosicao() {
+                    if (ultimaLatitude === null || ultimaLongitude === null) return;
+
+                    statusDiv.textContent = "Enviando...";
+
+                    const payload = {
+                        pessoa: localStorage.getItem("nome") || "Desconhecido",
+                        lat: ultimaLatitude,
+                        lon: ultimaLongitude
+                    };
+
+                    try {
+                        const resp = await fetch("https://api-amigos-pelo-mundo.onrender.com/input", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (!resp.ok) throw new Error("Resposta não OK: " + resp.status);
+
+                        try { await resp.json(); } catch (e) { /* ignora se não for JSON */ }
+
+                        statusDiv.textContent = "Localização enviada";
+                    } catch (err) {
+                        console.error("Erro ao enviar posição:", err);
+                        statusDiv.textContent = "Erro ao enviar";
+                    }
+                }
+
+                const envioInterval = setInterval(enviarPosicao, 5000);
+
+                window.addEventListener("beforeunload", function () {
+                    if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
+                    clearInterval(envioInterval);
+                });
+            }
+        });
+    </script>
 </body>
 
 </html>
