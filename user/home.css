@@ -22,6 +22,10 @@ body {
 }
 
 .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
     position: fixed;
     top: 0;
     border-radius: 0 0 4vw 4vw;
@@ -31,7 +35,9 @@ body {
 }
 
 img {
-    width: 100%;
+    width: 60%;
+    display: none;
+
 }
 
 #status {
@@ -67,6 +73,16 @@ button {
     height: 60vh;
     width: 90vw;
     box-shadow: 10px 12px 15px rgba(0, 0, 0, 0.3);
-    border-radius: 3vw;
+    border-radius: 1rem;
     z-index: 50;
+}
+
+@media (min-width: 768px) {
+
+
+    button {
+        width: 10vw;
+    }
+
+
 }
