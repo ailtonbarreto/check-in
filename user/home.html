@@ -7,7 +7,6 @@
     <title>Posicionamento em Tempo Real</title>
     <link rel="stylesheet" href="home.css">
     <link id="leaflet-css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
-
 </head>
 
 <body>
@@ -20,36 +19,7 @@
 
     <button id="exit-btn" onclick="location.href='index.html'">Sair</button>
 
-    <!-- Leaflet JS (CDN) -->
     <script id="leaflet-js" src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <!-- Fallback simples caso CDN seja bloqueado -->
-    <script>
-        (function () {
-            // Se Leaflet não carregar via CDN, tenta carregar local (coloque vendor/leaflet/leaflet.js e leaflet.css no servidor)
-            function loadLocalLeaflet() {
-                if (typeof L !== 'undefined') return;
-                var link = document.createElement('link');
-                link.rel = 'stylesheet';
-                link.href = '/vendor/leaflet/leaflet.css';
-                document.head.appendChild(link);
-                var s = document.createElement('script');
-                s.src = '/vendor/leaflet/leaflet.js';
-                s.onload = function () { console.info('Leaflet carregado localmente'); };
-                s.onerror = function () { console.error('Falha ao carregar Leaflet (CDN e local)'); };
-                document.head.appendChild(s);
-            }
-
-            // Se o elemento script do CDN falhar ao carregar, onerror não funciona em todos os navegadores para tags já inseridas,
-            // então verificamos após um pequeno timeout se L está definido; se não, tentamos o local.
-            setTimeout(function () {
-                if (typeof L === 'undefined') {
-                    console.warn('Leaflet não detectado via CDN, tentando fallback local...');
-                    loadLocalLeaflet();
-                }
-            }, 800);
-        })();
-    </script>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
@@ -57,19 +27,11 @@
             const statusDiv = document.getElementById("status");
             const mapEl = document.getElementById("map");
 
-            if (!mapEl) {
-                console.error("Elemento #map não encontrado");
-                statusDiv.textContent = "Erro: elemento do mapa não encontrado.";
-                return;
-            }
-
-            // Aguarda até que L esteja disponível (caso o fallback local esteja carregando)
             function whenLeafletReady(cb, timeout = 3000) {
                 const start = Date.now();
                 (function check() {
                     if (typeof L !== 'undefined') return cb();
                     if (Date.now() - start > timeout) {
-                        console.error("Leaflet não carregou dentro do tempo.");
                         statusDiv.textContent = "Erro: biblioteca de mapas não carregou.";
                         return;
                     }
@@ -80,16 +42,13 @@
             whenLeafletReady(initMap, 5000);
 
             function initMap() {
-                // Inicializa mapa com vista padrão (centro do Brasil) para evitar "oceano" inicial
+
                 const map = L.map("map", { zoomControl: true }).setView([-14.235, -51.925], 4);
 
                 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
                     maxZoom: 25,
                     attribution: "© OpenStreetMap"
                 }).addTo(map);
-
-                // Força recalcular tamanho (útil se o container foi alterado por CSS)
-                setTimeout(() => map.invalidateSize(), 200);
 
                 let marker = null;
                 let primeiraAtualizacao = true;
@@ -118,38 +77,13 @@
                     } else {
                         map.panTo([lat, lon]);
                     }
-
-                    setTimeout(() => map.invalidateSize(), 100);
                 }
 
                 function tratarErroGeolocalizacao(err) {
-                    console.warn("Erro geolocalização:", err);
-                    if (err && err.code !== undefined) {
-                        switch (err.code) {
-                            case err.PERMISSION_DENIED:
-                                statusDiv.textContent = "Permissão negada para acessar localização.";
-                                break;
-                            case err.POSITION_UNAVAILABLE:
-                                statusDiv.textContent = "Posição indisponível.";
-                                break;
-                            case err.TIMEOUT:
-                                statusDiv.textContent = "Tempo esgotado ao obter localização.";
-                                break;
-                            default:
-                                statusDiv.textContent = "Erro ao obter localização.";
-                        }
-                    } else {
-                        statusDiv.textContent = "Erro ao obter localização.";
-                    }
+                    statusDiv.textContent = "Erro ao obter localização.";
                 }
 
                 function iniciarWatch() {
-                    if (!("geolocation" in navigator)) {
-                        statusDiv.textContent = "Geolocalização não suportada pelo navegador.";
-                        return;
-                    }
-
-                    // Tenta obter posição inicial rápida
                     navigator.geolocation.getCurrentPosition(
                         (pos) => {
                             atualizarLocalizacao(pos);
@@ -163,13 +97,6 @@
                         },
                         (err) => {
                             tratarErroGeolocalizacao(err);
-                            if (watchId === null) {
-                                watchId = navigator.geolocation.watchPosition(
-                                    atualizarLocalizacao,
-                                    tratarErroGeolocalizacao,
-                                    { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
-                                );
-                            }
                         },
                         { enableHighAccuracy: true, maximumAge: 0, timeout: 7000 }
                     );
@@ -177,7 +104,15 @@
 
                 iniciarWatch();
 
-                // Envio periódico para API
+                // FUNÇÃO CORRETA PARA ENVIAR HORÁRIO DO BRASIL
+                function dataHoraBrasil() {
+                    const agora = new Date();
+                    const offsetMs = -3 * 60 * 60 * 1000; // GMT-3
+                    const brasil = new Date(agora.getTime() + offsetMs);
+                    return brasil.toISOString().slice(0, 19).replace("T", " ");
+                }
+
+                // ENVIO PARA API
                 async function enviarPosicao() {
                     if (ultimaLatitude === null || ultimaLongitude === null) return;
 
@@ -187,7 +122,7 @@
                         pessoa: localStorage.getItem("nome") || "Desconhecido",
                         lat: ultimaLatitude,
                         lon: ultimaLongitude,
-                        data_hora: new Date().toISOString()
+                        data: dataHoraBrasil() 
                     };
 
                     try {
@@ -199,8 +134,6 @@
 
                         if (!resp.ok) throw new Error("Resposta não OK: " + resp.status);
 
-                        try { await resp.json(); } catch (e) { /* ignora se não for JSON */ }
-
                         statusDiv.textContent = "Localização enviada";
                     } catch (err) {
                         console.error("Erro ao enviar posição:", err);
@@ -208,11 +141,10 @@
                     }
                 }
 
-                const envioInterval = setInterval(enviarPosicao, 5000);
+                setInterval(enviarPosicao, 5000);
 
                 window.addEventListener("beforeunload", function () {
-                    if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
-                    clearInterval(envioInterval);
+                    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
                 });
             }
         });
