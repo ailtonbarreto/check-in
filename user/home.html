@@ -5,81 +5,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Posicionamento em Tempo Real</title>
+    <link rel="stylesheet" href="home.css">
     <link id="leaflet-css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 
-    <style>
-
-        :root {
-            --primary-color: #1869ab;
-            --text-color: #fff;
-            --font-family: Arial, sans-serif;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0
-        }
-
-        body {
-            font-family: var(--font-family);
-            background: #ffffff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 50vh;
-            background: var(--primary-color);
-            color: var(--text-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: start;
-            border-radius: 0 0 4vw 4vw;
-            z-index: 10;
-            padding: 1.5rem;
-        }
-
-        #status {
-            font-weight: 700;
-            font-size: 1.05rem;
-            text-align: center;
-            z-index:  100;
-        }
-        #map {
-            display: block;
-            width: 90vw;
-            height: 60vh;
-            margin: 20vh auto 1rem;
-            border-radius: 1rem;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
-            overflow: hidden;
-            background: #eaeaea;
-            z-index: 50;
-        }
-
-        #exit-btn {
-            position: fixed;
-            bottom: 1.6rem;
-            width: 50vw;
-            background-color: var(--primary-color);
-            padding: 0.7rem;
-            color: var(--text-color);
-            border-radius: 0.4rem;
-            border: none;
-            font-size: 1rem;
-            z-index: 70;
-            cursor: pointer;
-        }
-
-
-    </style>
 </head>
 
 <body>
@@ -258,7 +186,8 @@
                     const payload = {
                         pessoa: localStorage.getItem("nome") || "Desconhecido",
                         lat: ultimaLatitude,
-                        lon: ultimaLongitude
+                        lon: ultimaLongitude,
+                        data_hora: new Date().toISOString()
                     };
 
                     try {
