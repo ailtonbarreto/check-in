@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Posicionamento em Tempo Real</title>
+    <title>GPS APP</title>
     <link rel="stylesheet" href="home.css">
     <link id="leaflet-css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 </head>
@@ -12,12 +12,31 @@
 <body>
 
     <div class="container">
-        <div id="status">Aguardando localização...</div>
+
     </div>
 
-    <div id="map" aria-label="Mapa"></div>
+    <header class="header">
 
-    <button id="exit-btn" onclick="location.href='index.html'">Sair</button>
+        <div id="status">Aguardando localização...</div>
+
+    </header>
+
+    <div class="mapa">
+
+        <div id="map" aria-label="Mapa"></div>
+
+    </div>
+
+
+
+    <div class="btn_container">
+
+        <button id="exit-btn" onclick="location.href='index.html'">Sair</button>
+
+
+    </div>
+
+
 
     <script id="leaflet-js" src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 
