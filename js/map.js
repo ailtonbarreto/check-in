@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function plotarPessoasNoMapa() {
 
-        fetch("https://api-amigos-pelo-mundo.onrender.com/localizacoes")
+        fetch("https://api-checkin-7zte.onrender.com/localizacoes")
             .then(response => response.json())
             .then(response => {
 
