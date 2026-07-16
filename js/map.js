@@ -38,59 +38,41 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
                 const agora = new Date();
-                console.log("AGORA (navegador):", agora.toISOString());
 
                 const pessoasAtuais = new Set();
+
+                let qtdVerdes = 0;
 
                 pessoas.forEach(pessoa => {
 
                     const id = pessoa.pessoa;
                     pessoasAtuais.add(id);
 
-                    // HORÁRIO ORIGINAL DO BANCO (UTC)
-                    console.log("--------------------------------------------------");
-                    console.log("Pessoa:", id);
-                    console.log("Horário recebido do banco (UTC):", pessoa.data);
-
                     let dataRegistro = new Date(pessoa.data);
-
-                    // CONVERTE UTC → BRT (UTC-3)
                     dataRegistro = new Date(dataRegistro.getTime() + (3 * 60 * 60 * 1000));
 
-                    console.log("Horário convertido para BRT:", dataRegistro.toISOString());
-
-                    // CALCULA DIFERENÇA
                     let diffSegundos = (agora - dataRegistro) / 1000;
+                    if (diffSegundos < 0) diffSegundos = 0;
 
-                    console.log("Diferença em segundos:", diffSegundos);
-
-                    if (diffSegundos < 0) {
-                        console.log("Horário veio no futuro → corrigindo para 0");
-                        diffSegundos = 0;
-                    }
-
-                    // Verde até 120s
                     const icon = diffSegundos > 120 ? iconLaranja() : iconVerde();
 
-                    console.log("Cor escolhida:", diffSegundos > 120 ? "LARANJA" : "VERDE");
+                    // Conta quantos estão verdes
+                    if (diffSegundos <= 120) {
+                        qtdVerdes++;
+                    }
 
-                    // REMOVE E RECRIA O MARCADOR
                     if (marcadores[id]) {
                         map.removeLayer(marcadores[id]);
                     }
 
                     marcadores[id] = L.marker([pessoa.lat, pessoa.lon], { icon })
-                        .bindTooltip(
-                            `<strong>${pessoa.pessoa}</strong>`,
-                            {
-                                permanent: false,
-                                direction: "top",
-                                offset: [0, -34]
-                            }
-                        )
+                        .bindPopup(`<strong>${pessoa.pessoa}</strong>`)
                         .addTo(map);
-
                 });
+
+                // Atualiza o HTML
+                document.getElementById("qtd_online").innerHTML = qtdVerdes;
+
 
                 // Remove quem sumiu da API
                 Object.keys(marcadores).forEach(id => {

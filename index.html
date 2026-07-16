@@ -45,6 +45,20 @@
 
     }
 
+    .fundo_fixo{
+        position:fixed;
+        top:0; display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 0.5vw;
+        background-color: #1869ab;
+        border-radius: 0 0 4vw 4vw;
+        height: 40vh;
+        width: 100%;
+        padding: 2vw 0;
+    }
+
     .container {
         display: grid;
         width: 97%;
@@ -72,7 +86,6 @@
         text-align: left;
         height: 8vw;
     }
-
 
     .analyse h3 {
         margin-left: 0.6rem;
@@ -199,8 +212,7 @@
 
 <body>
 
-    <div class="container1" style="position:fixed; top:0; display: flex; flex-direction: column; justify-content: flex-start; align-items: center;
-    gap: 0.5vw; background-color: #1869ab; border-radius: 0 0 4vw 4vw; height: 40vh; width: 100%; padding: 2vw 0;">
+    <div class="fundo_fixo">
 
 
     </div>
@@ -209,35 +221,35 @@
 
         <div class="analyse">
 
-            <div class="sales">
+            <div>
 
-                <h3>KPI 1</h3>
-                <h1 id="qtd_mov">0</h1>
-
-            </div>
-
-            <div class="visits">
-
-                <h3>KPI 2</h3>
-                <h1 id="valor_entrada">0</h1>
+                <h3>QTD Total</h3>
+                <h1 id="qtd_user">0</h1>
 
             </div>
 
-            <div class="searches">
+            <div>
+
+                <h3>Online</h3>
+                <h1 id="qtd_online">0</h1>
+
+            </div>
+
+            <div>
 
                 <h3>KPI 3</h3>
                 <h1 id="valor_saida">0</h1>
 
             </div>
 
-            <div class="searches">
+            <div>
 
                 <h3>KPI 4</h3>
                 <h1 id="saldo">0</h1>
 
             </div>
 
-            <div class="searches">
+            <div>
 
                 <h3>KPI 5</h3>
                 <h1 id="kpi5">0</h1>
@@ -300,12 +312,5 @@
 
 </body>
 
-<!-- <script>
-
-    if (sessionStorage.getItem("logon") !== "1") {
-        alert("Acesso não autorizado! Você será redirecionado para a tela de login.");
-        window.location.href = "index.html";
-    }
-</script> -->
 
 </html>

@@ -41,6 +41,7 @@
 
         document.getElementById('start-btn').addEventListener('click', function () {
             const nome = document.getElementById('nome').value;
+            sessionStorage.setItem('logon', 'ok'); 
             if (nome.trim() !== '') {
                 localStorage.setItem('nome', nome);
                 window.location.href = 'home.html';

@@ -15,6 +15,7 @@
 
     </div>
 
+
     <header class="header">
 
         <div id="status">Aguardando localização...</div>
@@ -141,7 +142,7 @@
                         pessoa: localStorage.getItem("nome") || "Desconhecido",
                         lat: ultimaLatitude,
                         lon: ultimaLongitude,
-                        data: dataHoraBrasil() 
+                        data: dataHoraBrasil()
                     };
 
                     try {
@@ -167,6 +168,14 @@
                 });
             }
         });
+    </script>
+
+    <script>
+
+        if (sessionStorage.getItem("logon") !== "ok") {
+            alert("Acesso não autorizado! Você será redirecionado para a tela de login.");
+            window.location.href = "index.html";
+        }
     </script>
 </body>
 
