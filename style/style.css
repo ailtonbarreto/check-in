@@ -137,23 +137,6 @@ body {
 
 }
 
-#custom-button{
-    background-color: #0580e4;
-    color: #ffffff;
-    cursor: pointer;
-    border: none;
-    text-align: center;
-    font-size: 0.9vw;
-    margin-top: 1vw;
-    border-radius: 0.5vw;
-    padding: 0.5vw;
-}
-
-#photo{
-    text-align: center;
-    margin: 1vw;
-}
-
 #start-btn {
     background-color: var(--color-btn);
     color: #ffffff;

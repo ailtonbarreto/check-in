@@ -13,6 +13,13 @@
 
     <div class="modal">
 
+        <div id="spinner">
+
+            <div id="loading"></div>
+
+
+        </div>
+
         <h1>Bem Vindo!</h1>
 
         <div class="imagem">
@@ -31,24 +38,43 @@
 
             <input type="password" placeholder="*****" id="senha">
 
-            <button id="start-btn">Entrar</button>
+            <div id="mensagem"></div>
+
+
+            <button id="start-btn" onclick="login()">Entrar</button>
 
         </div>
 
     </div>
 
-    <script>
 
-        document.getElementById('start-btn').addEventListener('click', function () {
-            const nome = document.getElementById('nome').value;
-            sessionStorage.setItem('logon', 'ok'); 
-            if (nome.trim() !== '') {
-                localStorage.setItem('nome', nome);
-                window.location.href = 'home.html';
+    <script>
+        async function login() {
+            const user = document.getElementById('nome').value;
+            const password = document.getElementById('senha').value;
+            const spinner = document.getElementById('spinner');
+
+            const response = await fetch('https://api-amigos-pelo-mundo.onrender.com/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user, password })
+            });
+
+            const data = await response.json();
+            const msg = document.getElementById('mensagem');
+
+            if (response.ok) {
+                spinner.style.display = 'flex';
+                localStorage.setItem('nome', user);
+                window.location.href = "home.html";
+
             } else {
-                alert('Por favor, digite seu nome.');
+                msg.innerHTML = `${data.error}`;
             }
-        });
+        }
+
 
     </script>
 

@@ -15,7 +15,7 @@ body {
     background: #ffffff;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     height: 100vh;
 }
@@ -77,10 +77,9 @@ body {
 .btn_container{
     height: 20vh;
     width: 80%;
-    margin-bottom: 5vh;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
 }
 

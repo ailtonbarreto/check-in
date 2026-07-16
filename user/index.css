@@ -27,12 +27,33 @@ body {
     overflow: hidden;
 }
 
-.container {
+/* ---------------------------------------------------------- */
+/* SPINNER */
+
+#spinner {
     display: none;
-    flex-direction: column;
+    justify-content: center;
     align-items: center;
+    position: fixed;
+    height: 100vh;
+    width: 100vw;
+    background-color: var(--color-text);
+    z-index: 2001;
 }
 
+#loading {
+    height: 60px;
+    width: 60px;
+    border: 8px solid #ffffff;
+    border-top: 8px solid #19AF8C;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
 
 /* --------------------------------------------------------- */
 
@@ -84,7 +105,6 @@ body {
     border-radius: 0.5vw;
     width: 20vw;
     font-size: 1vw;
-    margin-top: 1vw;
 }
 
 .form input{
@@ -106,13 +126,21 @@ body {
     flex-direction: column;
     justify-content: center;
     gap: 0.5vw;
-    z-index: 20000000000;
+    z-index: 200;
 }
 
 .form label{
     text-align: left;
     color: var(--bg-color);
     font-size: 1vw;
+}
+
+#mensagem{
+    color: #a30707;
+    font-weight: bold;
+    min-height: 30px;
+    width: 100%;
+    text-align: center;
 }
 
 /* ------------------------------------------- */

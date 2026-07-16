@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="./js/map.js"></script>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined">
     <title>Mapa</title>
 </head>
 
@@ -34,7 +34,6 @@
     body {
         font-family: 'Poppins', sans-serif;
         font-size: 0.88rem;
-        user-select: none;
         background: var(--color-background);
         font-size: 14px;
         display: flex;
@@ -45,9 +44,10 @@
 
     }
 
-    .fundo_fixo{
-        position:fixed;
-        top:0; display: flex;
+    .fundo_fixo {
+        position: fixed;
+        top: 0;
+        display: flex;
         flex-direction: column;
         justify-content: flex-start;
         align-items: center;
@@ -85,6 +85,17 @@
         justify-content: space-around;
         text-align: left;
         height: 8vw;
+    }
+
+    .kpi_header {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+
+        .material-symbols-outlined {
+            font-size: 2vw;
+        }
     }
 
     .analyse h3 {
@@ -156,6 +167,7 @@
             height: 100vh;
             grid-template-columns: 1fr;
             padding: 3vw;
+            user-select: none;
         }
 
 
@@ -223,38 +235,80 @@
 
             <div>
 
-                <h3>QTD Total</h3>
-                <h1 id="qtd_user">0</h1>
+                <div class="kpi_header">
+
+                    <h3>Motoristas</h3>
+
+                    <span class="material-symbols-outlined" style="color: rgb(223, 8, 223);">person</span>
+
+
+                </div>
+
+                <h1 id="qtd_user">-</h1>
+
+            </div>
+
+
+            <div>
+
+                <div class="kpi_header">
+
+                    <h3>Online</h3>
+
+                    <span class="material-symbols-outlined" style="color: green;">check_circle</span>
+
+                </div>
+
+                <h1 id="qtd_online">-</h1>
 
             </div>
 
             <div>
 
-                <h3>Online</h3>
-                <h1 id="qtd_online">0</h1>
+                <div class="kpi_header">
+
+                    <h3>Em Rota</h3>
+
+                    <span class="material-symbols-outlined" style="color: rgb(1, 224, 195);">speed_3</span>
+
+                </div>
+
+                <h1 id="em_rota">-</h1>
+
+            </div>
+
+
+            <div>
+
+                <div class="kpi_header">
+
+                    <h3>No Prazo</h3>
+
+                    <span class="material-symbols-outlined" style="color: rgb(5, 218, 40);">alarm_on</span>
+
+                </div>
+
+
+                <h1 id="">-</h1>
 
             </div>
 
             <div>
 
-                <h3>KPI 3</h3>
-                <h1 id="valor_saida">0</h1>
+                <div class="kpi_header">
+
+                    <h3>Atrasados</h3>
+
+                    <span class="material-symbols-outlined" style="color: rgb(238, 32, 4);">alarm_off</span>
+
+                </div>
+
+
+                <h1 id="">-</h1>
 
             </div>
 
-            <div>
 
-                <h3>KPI 4</h3>
-                <h1 id="saldo">0</h1>
-
-            </div>
-
-            <div>
-
-                <h3>KPI 5</h3>
-                <h1 id="kpi5">0</h1>
-
-            </div>
         </div>
 
 
