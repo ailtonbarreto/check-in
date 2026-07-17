@@ -37,7 +37,7 @@ body {
     padding: 1.5rem;
 }
 
-.header{
+.header {
     height: 10vh;
     display: flex;
     flex-direction: column;
@@ -74,7 +74,7 @@ body {
     z-index: 50;
 }
 
-.btn_container{
+.btn_container {
     height: 20vh;
     width: 80%;
     display: flex;
@@ -84,7 +84,7 @@ body {
 }
 
 #exit-btn {
-    width: 50vw;
+    width: 20vw;
     background-color: var(--primary-color);
     padding: 0.7rem;
     color: var(--text-color);
@@ -94,3 +94,11 @@ body {
     cursor: pointer;
 }
 
+@media (max-width: 768px) {
+
+    #exit-btn {
+        width: 50vw;
+    }
+
+
+}
