@@ -35,6 +35,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
                         attribution: "&copy; OpenStreetMap contributors"
                     }).addTo(map);
+                    map.zoomControl.remove();
+
                 }
 
                 const agora = new Date();
@@ -89,7 +91,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
     }
 
+    async function atualizarUsuariosAtivos() {
+        try {
+            const response = await fetch("https://api-checkin-7zte.onrender.com/usuarios_ativos");
+            const data = await response.json();
+
+            document.getElementById("qtd_user").innerHTML = data.total_ativos;
+        } catch (error) {
+            console.error("Erro ao buscar usuários ativos:", error);
+        }
+    }
+
     plotarPessoasNoMapa();
-    setInterval(plotarPessoasNoMapa, 10000);
+    atualizarUsuariosAtivos();
+
+    setInterval(() => {
+        plotarPessoasNoMapa();
+        atualizarUsuariosAtivos();
+    }, 10000);
 
 });
