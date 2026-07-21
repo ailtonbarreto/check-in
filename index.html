@@ -12,8 +12,6 @@
 </head>
 
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
-
     :root {
         --color-text: #1869ab;
         --color-shadow: #363949;
@@ -31,8 +29,13 @@
         box-sizing: border-box;
     }
 
+    @font-face {
+        font-family: 'minha-fonte';
+        src: url('../fonts/PlaypenSans-Regular.ttf') format('woff2');
+    }
+
     body {
-        font-family: 'Poppins', sans-serif;
+        font-family: 'minha-fonte', sans-serif;
         font-size: 0.88rem;
         background: var(--color-background);
         font-size: 14px;
@@ -261,7 +264,7 @@
 
                     <h3>Online</h3>
 
-                    <span class="material-symbols-outlined" style="color: green;">check_circle</span>
+                    <span class="material-symbols-outlined" style="color: rgb(5, 218, 40);">check_circle</span>
 
                 </div>
 
@@ -288,7 +291,7 @@
 
                 <div class="kpi_header">
 
-                    <h3>No Prazo</h3>
+                    <h3>QTD Entregas</h3>
 
                     <span class="material-symbols-outlined" style="color: rgb(5, 218, 40);">alarm_on</span>
 
