@@ -8,9 +8,7 @@
     <link rel="stylesheet" href="home.css">
     <link rel="shortcut icon" href="./placeholder.png" type="image/x-icon">
     <link id="leaflet-css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
-    <script id="leaflet-js" src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.js"></script>
-
+    
 </head>
 
 <body>
@@ -32,7 +30,7 @@
         <button id="exit-btn" onclick="location.href='index.html'">Sair</button>
     </div>
 
-
+    <script id="leaflet-js" src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
@@ -56,13 +54,6 @@
             function initMap() {
 
                 const map = L.map("map", { zoomControl: false }).setView([-14.235, -51.925], 4);
-
-                const userArrowIcon = L.icon({
-                    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-                    iconSize: [25, 41],
-                    iconAnchor: [12, 41]
-                });
-
 
                 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
                     maxZoom: 25,
@@ -162,7 +153,7 @@
                             weight: 5
                         }).addTo(map);
 
-
+      
                         // Centraliza no usuário SEMPRE
                         map.setView([ultimaLatitude, ultimaLongitude], 17);
 
@@ -187,17 +178,10 @@
                     statusDiv.textContent = "Localização atualizada";
 
                     if (!marker) {
-                        marker = L.marker([lat, lon], { icon: userArrowIcon }).addTo(map);
+                        marker = L.marker([lat, lon]).addTo(map).bindPopup("Você está aqui!");
                     } else {
                         marker.setLatLng([lat, lon]);
                     }
-
-                    const heading = pos.coords.heading;
-
-                    if (heading !== null && marker) {
-                        marker.setRotationAngle(heading);
-                    }
-
 
                     if (primeiraAtualizacao) {
                         map.setView([lat, lon], 17);
