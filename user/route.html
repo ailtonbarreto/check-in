@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="home.css">
     <link rel="shortcut icon" href="./placeholder.png" type="image/x-icon">
     <link id="leaflet-css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.js"></script>
 </head>
 
 <body>
@@ -152,7 +153,7 @@
                             weight: 5
                         }).addTo(map);
 
-      
+
                         // Centraliza no usuário SEMPRE
                         map.setView([ultimaLatitude, ultimaLongitude], 17);
 
@@ -181,6 +182,13 @@
                     } else {
                         marker.setLatLng([lat, lon]);
                     }
+
+                    const heading = pos.coords.heading;
+
+                    if (heading !== null && marker) {
+                        marker.setRotationAngle(heading);
+                    }
+
 
                     if (primeiraAtualizacao) {
                         map.setView([lat, lon], 17);
