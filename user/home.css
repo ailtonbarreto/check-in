@@ -97,12 +97,16 @@ body {
     background: #eaeaea;
     z-index: 50;
     transition: transform 0.3s linear;
+    transform-origin: center center;
 }
 
-.leaflet-map-pane {
+
+
+.leaflet-zoom-animated {
     transform-origin: center center;
     transition: transform 0.3s linear;
 }
+
 
 
 .btn_container {

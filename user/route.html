@@ -186,12 +186,11 @@
                     // Centraliza no usuário
                     map.setView([lat, lon], 17);
 
-            
-                    if (heading !== null) {
-                        const pane = document.querySelector(".leaflet-map-pane");
-                        pane.style.transform = `rotate(${heading}deg)`;
-                    }
 
+                    const zoomLayer = document.querySelector(".leaflet-zoom-animated");
+                    if (zoomLayer) {
+                        zoomLayer.style.transform = `rotate(${heading}deg)`;
+                    }
 
 
                     // Atualiza rota
