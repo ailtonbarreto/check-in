@@ -152,7 +152,7 @@
                             weight: 5
                         }).addTo(map);
 
-
+      
                         // Centraliza no usuário SEMPRE
                         map.setView([ultimaLatitude, ultimaLongitude], 17);
 
@@ -170,7 +170,6 @@
                 function atualizarLocalizacao(pos) {
                     const lat = pos.coords.latitude;
                     const lon = pos.coords.longitude;
-                    const heading = pos.coords.heading; // direção do movimento
 
                     ultimaLatitude = lat;
                     ultimaLongitude = lon;
@@ -183,21 +182,18 @@
                         marker.setLatLng([lat, lon]);
                     }
 
-                    // Centraliza no usuário
-                    map.setView([lat, lon], 17);
+                    if (primeiraAtualizacao) {
+                        map.setView([lat, lon], 17);
+                        primeiraAtualizacao = false;
 
+                        calcularRota();
 
-                    const zoomLayer = document.querySelector(".leaflet-zoom-animated");
-                    if (zoomLayer) {
-                        zoomLayer.style.transform = `rotate(${heading}deg)`;
+                    } else {
+                        map.panTo([lat, lon]);
+
+                        calcularRota();
                     }
-
-
-                    // Atualiza rota
-                    calcularRota();
                 }
-
-
 
                 function tratarErroGeolocalizacao(err) {
                     statusDiv.textContent = "Erro ao obter localização.";

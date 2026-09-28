@@ -59,7 +59,7 @@ body {
     justify-content: space-between;
     width: 85%;
 
-    input {
+    input{
         border: solid 2px var(--primary-color);
         outline: none;
         border-radius: 0.4rem;
@@ -96,18 +96,7 @@ body {
     overflow: hidden;
     background: #eaeaea;
     z-index: 50;
-    transition: transform 0.3s linear;
-    transform-origin: center center;
 }
-
-
-
-.leaflet-zoom-animated {
-    transform-origin: center center;
-    transition: transform 0.3s linear;
-}
-
-
 
 .btn_container {
     height: 20vh;
