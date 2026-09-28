@@ -18,10 +18,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function initMap() {
 
-        // DIV QUE VAI GIRAR
-        const rotatingDiv = document.getElementById("map-rotating");
 
-        // MAPA DENTRO DA DIV ROTACIONÁVEL
+        const rotatingDiv = document.getElementById("map-rotating");
+        let ultimoHeading = null;
+        let headingTravado = null;
+
         const map = L.map("map", { zoomControl: false }).setView([-14.235, -51.925], 4);
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -159,20 +160,39 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // ROTACIONAR MAPA PELO HEADING
             const heading = pos.coords.heading;
-            if (heading !== null) {
+
+            // Se o heading for null, mantém o último heading estável
+            if (heading === null) {
+                if (headingTravado !== null) {
+                    girarMapa(headingTravado);
+                }
+                return;
+            }
+
+            // Se for o primeiro heading válido, trava ele
+            if (ultimoHeading === null) {
+                ultimoHeading = heading;
+                headingTravado = heading;
                 girarMapa(heading);
+                return;
             }
 
-            if (primeiraAtualizacao) {
-                map.setView([lat, lon], 17);
-                primeiraAtualizacao = false;
+            // Diferença entre heading atual e último heading estável
+            const diff = Math.abs(heading - ultimoHeading);
 
-                calcularRota();
-
-            } else {
-                map.panTo([lat, lon]);
-                calcularRota();
+            // Se a diferença for pequena (< 8 graus), ignora (anti-tremida)
+            if (diff < 8) {
+                girarMapa(headingTravado);
+                return;
             }
+
+            // Atualiza heading estável
+            ultimoHeading = heading;
+            headingTravado = heading;
+
+            // Gira o mapa suavemente
+            girarMapa(heading);
+
         }
 
         function tratarErroGeolocalizacao(err) {
