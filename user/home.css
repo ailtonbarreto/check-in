@@ -39,7 +39,9 @@ body {
 
 .header {
     height: 10vh;
+    width: 100%;
     display: flex;
+    padding: 0 8%;
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -48,9 +50,9 @@ body {
 #status {
     font-weight: 700;
     font-size: 1.05rem;
-    text-align: center;
-    width: 100vw;
-    color: var(--text-color);
+    text-align: left;
+    width: 100%;
+    color: var(--primary-color);
 }
 
 .destino-box {
