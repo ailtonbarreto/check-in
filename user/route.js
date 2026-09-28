@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function whenLeafletReady(cb, timeout = 5000) {
         const start = Date.now();
         (function check() {
-            if (typeof L !== 'undefined') return cb();
+            if (typeof L !== "undefined") return cb();
             if (Date.now() - start > timeout) {
                 statusDiv.textContent = "Erro: biblioteca de mapas não carregou.";
                 return;
@@ -18,10 +18,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function initMap() {
 
-
         const rotatingDiv = document.getElementById("map-rotating");
-        let ultimoHeading = null;
-        let headingTravado = null;
+        let ultimoHeadingBom = null;
+        let headingTravado = 0;
+        const tolerancia = 10;
 
         const map = L.map("map", { zoomControl: false }).setView([-14.235, -51.925], 4);
 
@@ -158,41 +158,39 @@ document.addEventListener("DOMContentLoaded", function () {
                 marker.setLatLng([lat, lon]);
             }
 
-            // ROTACIONAR MAPA PELO HEADING
             const heading = pos.coords.heading;
 
-            // Se o heading for null, mantém o último heading estável
+            // Se heading vier null, mantém o heading travado
             if (heading === null) {
-                if (headingTravado !== null) {
+                girarMapa(headingTravado);
+            } else {
+
+                // Primeiro heading bom
+                if (ultimoHeadingBom === null) {
+                    ultimoHeadingBom = heading;
+                    headingTravado = heading;
+                    girarMapa(headingTravado);
+                } else {
+                    const diff = Math.abs(heading - ultimoHeadingBom);
+
+                    // Ignora pequenas variações (anti-tremida)
+                    if (diff >= tolerancia) {
+                        ultimoHeadingBom = heading;
+                        headingTravado = heading;
+                    }
+
                     girarMapa(headingTravado);
                 }
-                return;
             }
 
-            // Se for o primeiro heading válido, trava ele
-            if (ultimoHeading === null) {
-                ultimoHeading = heading;
-                headingTravado = heading;
-                girarMapa(heading);
-                return;
+            if (primeiraAtualizacao) {
+                map.setView([lat, lon], 17);
+                primeiraAtualizacao = false;
+                calcularRota();
+            } else {
+                map.panTo([lat, lon]);
+                calcularRota();
             }
-
-            // Diferença entre heading atual e último heading estável
-            const diff = Math.abs(heading - ultimoHeading);
-
-            // Se a diferença for pequena (< 8 graus), ignora (anti-tremida)
-            if (diff < 8) {
-                girarMapa(headingTravado);
-                return;
-            }
-
-            // Atualiza heading estável
-            ultimoHeading = heading;
-            headingTravado = heading;
-
-            // Gira o mapa suavemente
-            girarMapa(heading);
-
         }
 
         function tratarErroGeolocalizacao(err) {
