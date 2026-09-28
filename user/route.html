@@ -186,10 +186,13 @@
                     // Centraliza no usuário
                     map.setView([lat, lon], 17);
 
-                    // 🔥 Rotaciona o mapa conforme o rumo do carro
+            
                     if (heading !== null) {
-                        document.getElementById("map").style.transform = `rotate(${heading}deg)`;
+                        const pane = document.querySelector(".leaflet-map-pane");
+                        pane.style.transform = `rotate(${heading}deg)`;
                     }
+
+
 
                     // Atualiza rota
                     calcularRota();
