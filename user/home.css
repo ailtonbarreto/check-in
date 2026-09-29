@@ -67,6 +67,7 @@ body {
     border: solid 2px var(--primary-color);
     outline: none;
     border-radius: 0.4rem;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
 }
 
 .destino-box button {
@@ -78,6 +79,7 @@ body {
     border: none;
     font-size: 1rem;
     cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
 }
 
 /* MAPA */
@@ -91,7 +93,6 @@ body {
     justify-content: center;
 }
 
-/* JANELA DO MAPA */
 #map-container {
     width: 90%;
     margin: 6vw 0;
@@ -102,7 +103,6 @@ body {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
 }
 
-/* MAPA QUE GIRA */
 #map-rotating {
     width: 200%;
     height: 200%;
@@ -112,7 +112,6 @@ body {
     transform-origin: center center;
     transition: transform 0.25s linear;
 }
-
 
 #map {
     width: 100%;
@@ -137,6 +136,7 @@ body {
     border: none;
     font-size: 1rem;
     cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
 }
 
 @media (max-width: 768px) {

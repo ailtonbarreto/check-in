@@ -265,10 +265,29 @@
 //     }
 // });
 
+// ------------------------------------------------------------------------------------------
+
 
 document.addEventListener("DOMContentLoaded", function () {
 
     const statusDiv = document.getElementById("status");
+
+    // ============================
+    // BÚSSOLA DO APARELHO
+    // ============================
+    let compassHeading = null;
+
+    window.addEventListener("deviceorientationabsolute", (event) => {
+        if (event.alpha !== null) {
+            compassHeading = event.alpha; // graus
+        }
+    });
+
+    window.addEventListener("deviceorientation", (event) => {
+        if (event.alpha !== null) {
+            compassHeading = event.alpha;
+        }
+    });
 
     function whenLeafletReady(cb, timeout = 5000) {
         const start = Date.now();
@@ -306,12 +325,9 @@ document.addEventListener("DOMContentLoaded", function () {
         let rotaPolyline = null;
         let rotaLatLngs = [];
 
-        // Gira o mapa
-        function girarMapa(heading) {
-            rotatingDiv.style.transform = `rotate(${heading}deg)`;
-        }
-
-        // Bearing entre dois pontos
+        // ============================
+        // BEARING ENTRE DOIS PONTOS
+        // ============================
         function calcularBearing(lat1, lon1, lat2, lon2) {
             const toRad = deg => deg * Math.PI / 180;
             const toDeg = rad => rad * 180 / Math.PI;
@@ -325,12 +341,12 @@ document.addEventListener("DOMContentLoaded", function () {
                       Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
 
             let θ = Math.atan2(y, x);
-            let brng = (toDeg(θ) + 360) % 360;
-
-            return brng;
+            return (toDeg(θ) + 360) % 360;
         }
 
-        // Encontra o ponto da rota mais próximo do usuário
+        // ============================
+        // PONTO MAIS PRÓXIMO DA ROTA
+        // ============================
         function encontrarPontoMaisProximo(lat, lon) {
             let melhorIndex = 0;
             let melhorDist = Infinity;
@@ -349,6 +365,42 @@ document.addEventListener("DOMContentLoaded", function () {
             return melhorIndex;
         }
 
+        // ============================
+        // ORIENTAÇÃO TRAVADA NA RUA
+        // ============================
+        let headingTravado = 0;
+
+        function orientarMapa(lat, lon) {
+
+            let bearingRota = null;
+
+            // Se houver rota, usa o sentido da rua
+            if (rotaLatLngs.length > 2) {
+                const idx = encontrarPontoMaisProximo(lat, lon);
+                const proxIdx = Math.min(idx + 1, rotaLatLngs.length - 1);
+                const prox = rotaLatLngs[proxIdx];
+
+                bearingRota = calcularBearing(lat, lon, prox[0], prox[1]);
+            }
+
+            let headingFinal = null;
+
+            if (bearingRota !== null) {
+                headingFinal = bearingRota; // prioridade: rua
+            } else if (compassHeading !== null) {
+                headingFinal = compassHeading; // fallback: bússola
+            } else {
+                headingFinal = headingTravado; // último heading bom
+            }
+
+            headingTravado = headingFinal;
+
+            rotatingDiv.style.transform = `rotate(${headingFinal}deg)`;
+        }
+
+        // ============================
+        // GEOCODIFICAÇÃO
+        // ============================
         async function geocodificarEndereco(endereco) {
             const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}`;
 
@@ -373,6 +425,9 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
+        // ============================
+        // DESTINO
+        // ============================
         document.getElementById("btn-ir").addEventListener("click", async () => {
             const texto = document.getElementById("destino-input").value.trim();
 
@@ -395,6 +450,9 @@ document.addEventListener("DOMContentLoaded", function () {
             calcularRota();
         });
 
+        // ============================
+        // ROTA
+        // ============================
         async function calcularRota() {
 
             if (!ultimaLatitude || !ultimaLongitude) {
@@ -433,6 +491,9 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
+        // ============================
+        // ATUALIZAÇÃO DE LOCALIZAÇÃO
+        // ============================
         function atualizarLocalizacao(pos) {
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
@@ -448,19 +509,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 marker.setLatLng([lat, lon]);
             }
 
-            // ROTACIONA PELO SENTIDO DA RUA
-            if (rotaLatLngs.length > 2) {
-
-                const idx = encontrarPontoMaisProximo(lat, lon);
-
-                const proxIdx = Math.min(idx + 1, rotaLatLngs.length - 1);
-
-                const prox = rotaLatLngs[proxIdx];
-
-                const bearing = calcularBearing(lat, lon, prox[0], prox[1]);
-
-                girarMapa(bearing);
-            }
+            // ORIENTAÇÃO TRAVADA NA RUA
+            orientarMapa(lat, lon);
 
             if (primeiraAtualizacao) {
                 map.setView([lat, lon], 17);
