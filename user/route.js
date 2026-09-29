@@ -272,23 +272,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const statusDiv = document.getElementById("status");
 
-    // ============================
-    // BÚSSOLA DO APARELHO
-    // ============================
-    let compassHeading = null;
-
-    window.addEventListener("deviceorientationabsolute", (event) => {
-        if (event.alpha !== null) {
-            compassHeading = event.alpha; // graus
-        }
-    });
-
-    window.addEventListener("deviceorientation", (event) => {
-        if (event.alpha !== null) {
-            compassHeading = event.alpha;
-        }
-    });
-
     function whenLeafletReady(cb, timeout = 5000) {
         const start = Date.now();
         (function check() {
@@ -345,57 +328,43 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // ============================
-        // PONTO MAIS PRÓXIMO DA ROTA
+        // PONTO MAIS PRÓXIMO NA ROTA
         // ============================
-        function encontrarPontoMaisProximo(lat, lon) {
-            let melhorIndex = 0;
-            let melhorDist = Infinity;
+        function pontoMaisProximo(lat, lon) {
+            let melhor = 0;
+            let menorDist = Infinity;
 
             for (let i = 0; i < rotaLatLngs.length; i++) {
                 const dx = rotaLatLngs[i][0] - lat;
                 const dy = rotaLatLngs[i][1] - lon;
-                const dist = dx*dx + dy*dy;
+                const dist = dx * dx + dy * dy;
 
-                if (dist < melhorDist) {
-                    melhorDist = dist;
-                    melhorIndex = i;
+                if (dist < menorDist) {
+                    menorDist = dist;
+                    melhor = i;
                 }
             }
 
-            return melhorIndex;
+            return melhor;
         }
 
         // ============================
-        // ORIENTAÇÃO TRAVADA NA RUA
+        // ORIENTAR MAPA PELA ROTA
         // ============================
-        let headingTravado = 0;
+        function orientarPelaRota(lat, lon) {
 
-        function orientarMapa(lat, lon) {
+            if (rotaLatLngs.length < 2) return;
 
-            let bearingRota = null;
+            const idx = pontoMaisProximo(lat, lon);
+            const proxIdx = Math.min(idx + 1, rotaLatLngs.length - 1);
+            const prox = rotaLatLngs[proxIdx];
 
-            // Se houver rota, usa o sentido da rua
-            if (rotaLatLngs.length > 2) {
-                const idx = encontrarPontoMaisProximo(lat, lon);
-                const proxIdx = Math.min(idx + 1, rotaLatLngs.length - 1);
-                const prox = rotaLatLngs[proxIdx];
+            const bearing = calcularBearing(lat, lon, prox[0], prox[1]);
 
-                bearingRota = calcularBearing(lat, lon, prox[0], prox[1]);
-            }
+            // rota sempre pra cima (modo retrato)
+            const anguloMapa = -bearing;
 
-            let headingFinal = null;
-
-            if (bearingRota !== null) {
-                headingFinal = bearingRota; // prioridade: rua
-            } else if (compassHeading !== null) {
-                headingFinal = compassHeading; // fallback: bússola
-            } else {
-                headingFinal = headingTravado; // último heading bom
-            }
-
-            headingTravado = headingFinal;
-
-            rotatingDiv.style.transform = `rotate(${headingFinal}deg)`;
+            rotatingDiv.style.transform = `rotate(${anguloMapa}deg)`;
         }
 
         // ============================
@@ -426,7 +395,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // ============================
-        // DESTINO
+        // DESTINO DINÂMICO
         // ============================
         document.getElementById("btn-ir").addEventListener("click", async () => {
             const texto = document.getElementById("destino-input").value.trim();
@@ -451,7 +420,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
         // ============================
-        // ROTA
+        // CALCULAR ROTA
         // ============================
         async function calcularRota() {
 
@@ -509,8 +478,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 marker.setLatLng([lat, lon]);
             }
 
-            // ORIENTAÇÃO TRAVADA NA RUA
-            orientarMapa(lat, lon);
+            // orienta o mapa pelo sentido da rota
+            orientarPelaRota(lat, lon);
 
             if (primeiraAtualizacao) {
                 map.setView([lat, lon], 17);
@@ -544,5 +513,52 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         iniciarWatch();
+
+        // ============================
+        // DATA/HORA BRASIL
+        // ============================
+        function dataHoraBrasil() {
+            const agora = new Date();
+            const offsetMs = -3 * 60 * 60 * 1000;
+            const brasil = new Date(agora.getTime() + offsetMs);
+            return brasil.toISOString().slice(0, 19).replace("T", " ");
+        }
+
+        // ============================
+        // ENVIO PARA API
+        // ============================
+        async function enviarPosicao() {
+            if (ultimaLatitude === null || ultimaLongitude === null) return;
+
+            statusDiv.textContent = "Enviando...";
+
+            const payload = {
+                pessoa: localStorage.getItem("nome") || "Desconhecido",
+                lat: ultimaLatitude,
+                lon: ultimaLongitude,
+                data: dataHoraBrasil()
+            };
+
+            try {
+                const resp = await fetch("https://api-checkin-7zte.onrender.com/input", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!resp.ok) throw new Error("Resposta não OK: " + resp.status);
+
+                statusDiv.textContent = "Localização enviada";
+            } catch (err) {
+                console.error("Erro ao enviar posição:", err);
+                statusDiv.textContent = "Erro ao enviar";
+            }
+        }
+
+        setInterval(enviarPosicao, 5000);
+
+        window.addEventListener("beforeunload", function () {
+            if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+        });
     }
 });
