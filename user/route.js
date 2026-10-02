@@ -159,20 +159,22 @@ document.addEventListener("DOMContentLoaded", function () {
         // GEOCODIFICAÇÃO
         // ============================
         async function geocodificarEndereco(endereco) {
-            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endereco)}`;
+            const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(endereco)}&limit=1`;
 
             try {
                 const resp = await fetch(url);
                 const dados = await resp.json();
 
-                if (dados.length === 0) {
+                if (!dados.features || dados.features.length === 0) {
                     alert("Endereço não encontrado.");
                     return null;
                 }
 
+                const f = dados.features[0];
+
                 return {
-                    lat: parseFloat(dados[0].lat),
-                    lon: parseFloat(dados[0].lon)
+                    lat: f.geometry.coordinates[1],
+                    lon: f.geometry.coordinates[0]
                 };
 
             } catch (err) {
@@ -182,11 +184,15 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
+
         // ============================
         // DESTINO DINÂMICO
         // ============================
         document.getElementById("btn-ir").addEventListener("click", async () => {
             const texto = inputDestino.value.trim();
+
+            lista.innerHTML = "";
+
 
             if (texto === "") {
                 alert("Digite um destino.");
