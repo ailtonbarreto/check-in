@@ -82,6 +82,29 @@ body {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
 }
 
+.autocomplete-items {
+    position: absolute;
+    background: white;
+    border: 1px solid #ccc;
+    width: 85%;
+    margin-top: 10vh;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 9999;
+    border-radius: 0.4rem;
+}
+
+.autocomplete-items div {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.autocomplete-items div:hover {
+    background: #f0f0f0;
+}
+
+
 /* MAPA */
 .mapa {
     z-index: 100;
