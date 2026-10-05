@@ -249,7 +249,6 @@ document.addEventListener("DOMContentLoaded", function () {
             if (destinoMarker) destinoMarker.remove();
             destinoMarker = new maplibregl.Marker().setLngLat([destino.lon, destino.lat]).addTo(map);
             calcularRota();
-            rotacionarCarroPara();
         });
 
         // ============================
