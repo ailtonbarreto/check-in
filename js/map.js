@@ -70,6 +70,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     marcadores[id] = L.marker([pessoa.lat, pessoa.lon], { icon })
                         .bindPopup(`<strong>${pessoa.pessoa}</strong>`)
                         .addTo(map);
+                        marcadores[id].openPopup();
                 });
 
                 // Atualiza o HTML
