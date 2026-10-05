@@ -34,29 +34,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // debounce simples para evitar muitas requisições
-    let debounceTimer = null;
-    inputDestino.addEventListener("input", () => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(async () => {
-            const texto = inputDestino.value.trim();
-            lista.innerHTML = "";
-            if (texto.length < 3) return;
-            const sugestoes = await buscarSugestoes(texto);
-            sugestoes.forEach(s => {
-                const item = document.createElement("div");
-                item.className = "autocomplete-item";
-                item.textContent = s.display_name;
-                item.addEventListener("click", () => {
-                    inputDestino.value = s.display_name;
-                    lista.innerHTML = "";
-                    destinoFixo = { lat: parseFloat(s.lat), lon: parseFloat(s.lon) };
-                    calcularRota();
-                });
-                lista.appendChild(item);
-            });
-        }, 220);
-    });
 
     // ============================
     // Aguarda MapLibre carregado
@@ -103,6 +80,32 @@ document.addEventListener("DOMContentLoaded", function () {
             pitch: 0,
             bearing: 0
         });
+
+        // dentro de initMap(), perto do início (após declarar variáveis de estado)
+        let debounceTimer = null;
+        inputDestino.addEventListener("input", () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(async () => {
+                const texto = inputDestino.value.trim();
+                lista.innerHTML = "";
+                if (texto.length < 3) return;
+                const sugestoes = await buscarSugestoes(texto);
+                sugestoes.forEach(s => {
+                    const item = document.createElement("div");
+                    item.className = "autocomplete-item";
+                    item.textContent = s.display_name;
+                    item.addEventListener("click", async () => {
+                        inputDestino.value = s.display_name;
+                        lista.innerHTML = "";
+                        destinoFixo = { lat: parseFloat(s.lat), lon: parseFloat(s.lon) };
+                        await calcularRota();
+                        orientarPelaRota(ultimaLatitude, ultimaLongitude);
+                    });
+                    lista.appendChild(item);
+                });
+            }, 220);
+        });
+
 
         // estado
         let primeiraAtualizacao = true;
@@ -233,9 +236,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return menorDist > limite;
         }
 
-        // ============================
-        // BOTÃO IR
-        // ============================
+        // handler do botão IR (garante que calcularRota seja aguardado)
         btnIr.addEventListener("click", async () => {
             const texto = inputDestino.value.trim();
             lista.innerHTML = "";
@@ -248,12 +249,15 @@ document.addEventListener("DOMContentLoaded", function () {
             destinoFixo = destino;
             if (destinoMarker) destinoMarker.remove();
             destinoMarker = new maplibregl.Marker().setLngLat([destino.lon, destino.lat]).addTo(map);
-            calcularRota();
+
+            // aguarda rota calculada e então orienta o mapa para frente da rota
+            await calcularRota();
+            if (ultimaLatitude !== null && ultimaLongitude !== null) {
+                orientarPelaRota(ultimaLatitude, ultimaLongitude);
+            }
         });
 
-        // ============================
-        // CALCULAR ROTA (OSRM)
-        // ============================
+        // calcularRota atualizado — chama orientarPelaRota assim que a rota estiver pronta
         async function calcularRota() {
             if (!ultimaLatitude || !ultimaLongitude) {
                 statusDiv.textContent = "Aguardando localização...";
@@ -263,26 +267,65 @@ document.addEventListener("DOMContentLoaded", function () {
                 statusDiv.textContent = "Digite um destino.";
                 return;
             }
+
             const url = `https://router.project-osrm.org/route/v1/driving/${ultimaLongitude},${ultimaLatitude};${destinoFixo.lon},${destinoFixo.lat}?overview=full&geometries=geojson`;
+
             try {
+                statusDiv.textContent = "Calculando rota...";
                 const response = await fetch(url);
                 const data = await response.json();
+
+                if (!data.routes || !data.routes[0] || !data.routes[0].geometry) {
+                    throw new Error("Resposta de rota inválida");
+                }
+
                 const coords = data.routes[0].geometry.coordinates; // [lon, lat]
-                rotaLatLngs = coords.map(c => [c[1], c[0]]); // [lat, lon]
+                // garante formato [lat, lon]
+                rotaLatLngs = coords.map(c => [c[1], c[0]]);
+
                 rotaGeoJSON = {
                     type: "FeatureCollection",
                     features: [{ type: "Feature", geometry: { type: "LineString", coordinates: coords } }]
                 };
+
                 if (map.getSource("rota")) {
                     map.getSource("rota").setData(rotaGeoJSON);
+                } else {
+                    // caso a fonte ainda não exista (defensivo)
+                    map.addSource("rota", { type: "geojson", data: rotaGeoJSON });
+                    map.addLayer({
+                        id: "rota-line",
+                        type: "line",
+                        source: "rota",
+                        layout: { "line-join": "round", "line-cap": "round" },
+                        paint: { "line-color": "#1976d2", "line-width": 5 }
+                    });
                 }
+
+
                 map.easeTo({ center: [ultimaLongitude, ultimaLatitude], zoom: 17, duration: 300 });
+
                 statusDiv.textContent = "Rota calculada";
+
+
+                await new Promise(r => setTimeout(r, 80));
+
+
+                if (ultimaLatitude !== null && ultimaLongitude !== null) {
+                    orientarPelaRota(ultimaLatitude, ultimaLongitude);
+                }
+
             } catch (err) {
                 console.error("Erro ao calcular rota:", err);
                 statusDiv.textContent = "Erro ao calcular rota";
             }
         }
+
+        console.log("rotaLatLngs length:", rotaLatLngs.length);
+        console.log("primeiros pontos rota:", rotaLatLngs.slice(0, 3));
+        console.log("pos atual:", ultimaLatitude, ultimaLongitude);
+
+
 
         // ============================
         // MARKER DO CARRO (DOM) COM IMAGEM - tamanho fixo em pixels
