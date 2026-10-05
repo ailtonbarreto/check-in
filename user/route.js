@@ -184,6 +184,38 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
+        function distanciaEmMetros(lat1, lon1, lat2, lon2) {
+            const R = 6371000; // raio da Terra em metros
+            const toRad = deg => deg * Math.PI / 180;
+
+            const φ1 = toRad(lat1);
+            const φ2 = toRad(lat2);
+            const Δφ = toRad(lat2 - lat1);
+            const Δλ = toRad(lon2 - lon1);
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c; // distância em metros
+        }
+
+        function estaForaDaRota(lat, lon, limite = 30) {
+            if (rotaLatLngs.length === 0) return true;
+
+            let menorDist = Infinity;
+
+            for (let i = 0; i < rotaLatLngs.length; i++) {
+                const dist = distanciaEmMetros(lat, lon, rotaLatLngs[i][0], rotaLatLngs[i][1]);
+                if (dist < menorDist) menorDist = dist;
+            }
+
+            return menorDist > limite;
+        }
+
+
 
         // ============================
         // DESTINO DINÂMICO
@@ -280,8 +312,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 calcularRota();
             } else {
                 map.panTo([lat, lon]);
-                calcularRota();
+
+                // só recalcula se sair da rota
+                if (estaForaDaRota(lat, lon)) {
+                    calcularRota();
+                }
             }
+
         }
 
         function tratarErroGeolocalizacao(err) {
