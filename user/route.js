@@ -76,7 +76,7 @@ document.addEventListener("DOMContentLoaded", function () {
     whenMapLibreReady(initMap);
 
     // ============================
-    // MAPA (MapLibre GL JS) - JS completo
+    // MAPA (MapLibre GL JS) - sempre alinhado pela rota (sem alternância)
     // ============================
     function initMap() {
 
@@ -120,10 +120,9 @@ document.addEventListener("DOMContentLoaded", function () {
         let userMarker = null;
         let ultimaPosParaRotacao = null;
 
-        // rotation mode: default to device (map follows screen heading)
-        let rotationMode = 'device'; // 'device' or 'route'
-        let deviceHeading = null;
-        let deviceOrientationListener = null;
+        // configurações do ícone do carro
+        const ICON_URL = "car.png"; // troque pela sua URL ou DataURL
+        const ICON_SIZE = 96; // ajuste aqui o tamanho em pixels (ex.: 48, 72, 96, 128)
 
         // adiciona fonte/layer para rota
         map.on("load", () => {
@@ -175,7 +174,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // ============================
-        // ORIENTAR MAPA PELA ROTA (nativo)
+        // ORIENTAR MAPA PELA ROTA (sempre)
         // ============================
         function orientarPelaRota(lat, lon) {
             if (rotaLatLngs.length < 2) return;
@@ -183,98 +182,8 @@ document.addEventListener("DOMContentLoaded", function () {
             const proxIdx = Math.min(idx + 1, rotaLatLngs.length - 1);
             const prox = rotaLatLngs[proxIdx];
             const bearing = calcularBearing(lat, lon, prox[0], prox[1]);
-            if (rotationMode === 'route') {
-                map.rotateTo(bearing, { duration: 220 });
-            }
+            map.rotateTo(bearing, { duration: 220 });
         }
-
-        // ============================
-        // DEVICE ORIENTATION (map follows screen heading)
-        // ============================
-        function ativarDeviceOrientation() {
-            function handler(e) {
-                let heading = null;
-                if (e.webkitCompassHeading !== undefined) {
-                    heading = e.webkitCompassHeading; // iOS
-                } else if (e.absolute === true && e.alpha !== null) {
-                    heading = 360 - e.alpha;
-                } else if (e.alpha !== null) {
-                    heading = 360 - e.alpha;
-                }
-                if (heading !== null && !isNaN(heading)) {
-                    deviceHeading = (heading + 360) % 360;
-                    if (rotationMode === 'device') {
-                        map.rotateTo(deviceHeading, { duration: 120 });
-                    }
-                }
-            }
-
-            if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission().then(permissionState => {
-                    if (permissionState === 'granted') {
-                        deviceOrientationListener = handler;
-                        window.addEventListener('deviceorientation', deviceOrientationListener, true);
-                    } else {
-                        console.warn("Permissão de orientação negada.");
-                    }
-                }).catch(err => {
-                    console.warn("Erro ao pedir permissão de orientação:", err);
-                });
-            } else {
-                deviceOrientationListener = handler;
-                window.addEventListener('deviceorientation', deviceOrientationListener, true);
-            }
-        }
-
-        function desativarDeviceOrientation() {
-            if (deviceOrientationListener) {
-                window.removeEventListener('deviceorientation', deviceOrientationListener, true);
-                deviceOrientationListener = null;
-                deviceHeading = null;
-            }
-        }
-
-        // cria botão flutuante para alternar modo de rotação
-        function criarBotaoModoRotacao() {
-            const btn = document.createElement("button");
-            btn.id = "btn-rotate-mode";
-            btn.textContent = rotationMode === 'device' ? "Rodar" : "Alinhar";
-            btn.style.position = "absolute";
-            btn.style.top = "12px";
-            btn.style.right = "30px";
-            btn.style.zIndex = 9999;
-            btn.style.cursor = "pointer";
-            document.body.appendChild(btn);
-
-            btn.addEventListener("click", () => {
-                if (rotationMode === 'route') {
-                    setRotationMode('device');
-                } else {
-                    setRotationMode('route');
-                }
-            });
-        }
-
-        function setRotationMode(mode) {
-            if (mode === rotationMode) return;
-            rotationMode = mode;
-            const btn = document.getElementById("btn-rotate-mode");
-            if (rotationMode === 'device') {
-                if (btn) btn.textContent = "Rodar";
-                ativarDeviceOrientation();
-                // if we have a device heading already, apply it immediately
-                if (deviceHeading !== null) map.rotateTo(deviceHeading, { duration: 120 });
-            } else {
-                if (btn) btn.textContent = "Alinhar";
-                desativarDeviceOrientation();
-                if (ultimaLatitude !== null && ultimaLongitude !== null) orientarPelaRota(ultimaLatitude, ultimaLongitude);
-            }
-        }
-
-        // cria o botão ao iniciar o mapa
-        criarBotaoModoRotacao();
-        // ativa device orientation por padrão (modo 'device' inicial)
-        ativarDeviceOrientation();
 
         // ============================
         // GEOCODIFICAÇÃO (PHOTON)
@@ -376,36 +285,37 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // ============================
-        // MARKER DO CARRO (DOM) COM IMAGEM
+        // MARKER DO CARRO (DOM) COM IMAGEM - tamanho fixo em pixels
         // ============================
-        function criarCarMarkerComImagem(srcUrl, size = 72) {
+        function criarCarMarkerComImagem(srcUrl, sizePx = ICON_SIZE) {
             const el = document.createElement("div");
             el.className = "car-marker";
-            el.style.width = size + "px";
-            el.style.height = size + "px";
+            // define tamanho do container explicitamente
+            el.style.width = sizePx + "px";
+            el.style.height = sizePx + "px";
             el.style.display = "flex";
             el.style.alignItems = "center";
             el.style.justifyContent = "center";
             el.style.pointerEvents = "none";
             el.style.transformOrigin = "center center";
+            el.style.willChange = "transform";
 
             const img = document.createElement("img");
             img.src = srcUrl;
-            img.style.width = "100%";
-            img.style.height = "100%";
+            // define tamanho fixo na imagem para garantir que cresça
+            img.style.width = sizePx + "px";
+            img.style.height = sizePx + "px";
             img.style.objectFit = "contain";
             img.alt = "carro";
+            img.draggable = false;
 
             el.appendChild(img);
             return el;
         }
 
-        // Substitua esta URL pela do seu ícone hospedado (ou DataURL)
-        const ICON_URL = "car.png";
-
         function atualizarUserMarker(lat, lon) {
             if (!userMarker) {
-                const el = criarCarMarkerComImagem(ICON_URL, 72);
+                const el = criarCarMarkerComImagem(ICON_URL, ICON_SIZE);
                 userMarker = new maplibregl.Marker({ element: el, anchor: "center" })
                     .setLngLat([lon, lat])
                     .addTo(map);
@@ -417,6 +327,7 @@ document.addEventListener("DOMContentLoaded", function () {
         function rotacionarCarroPara(bearing) {
             if (!userMarker) return;
             const el = userMarker.getElement();
+            // aplica rotação no elemento pai (container) — mantém tamanho
             el.style.transform = `rotate(${bearing}deg)`;
         }
 
@@ -488,20 +399,15 @@ document.addEventListener("DOMContentLoaded", function () {
             // atualiza marker do carro (DOM)
             atualizarUserMarker(lat, lon);
 
-            // calcula e aplica rotação do ícone do carro
+            // calcula e aplica rotação do ícone do carro (aponta direção do movimento)
             if (ultimaPosParaRotacao) {
                 const b = calcularBearing(ultimaPosParaRotacao.lat, ultimaPosParaRotacao.lon, lat, lon);
                 rotacionarCarroPara(b);
             }
             ultimaPosParaRotacao = { lat, lon };
 
-            // orienta mapa conforme modo atual
-            if (rotationMode === 'route') {
-                orientarPelaRota(lat, lon);
-            } else if (rotationMode === 'device' && deviceHeading !== null) {
-                // device listener já aplica rotação; aqui garantimos alinhamento imediato se necessário
-                map.rotateTo(deviceHeading, { duration: 120 });
-            }
+            // sempre orientar pela rota (mapa gira para manter próximo trecho apontando para cima)
+            orientarPelaRota(lat, lon);
 
             if (primeiraAtualizacao) {
                 map.jumpTo({ center: [lon, lat], zoom: 17 });
@@ -553,11 +459,10 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
-        // limpa watch, interval e device orientation ao sair da página
+        // limpa watch e interval ao sair da página
         window.addEventListener("beforeunload", function () {
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
             pararEnvioPeriodico();
-            desativarDeviceOrientation();
         });
     }
 });

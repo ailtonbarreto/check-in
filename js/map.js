@@ -56,10 +56,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     let diffSegundos = (agora - dataRegistro) / 1000;
                     if (diffSegundos < 0) diffSegundos = 0;
 
-                    const icon = diffSegundos > 120 ? iconLaranja() : iconVerde();
+                    const icon = diffSegundos > 30 ? iconLaranja() : iconVerde();
 
                     // Conta quantos estão verdes
-                    if (diffSegundos <= 120) {
+                    if (diffSegundos <= 30) {
                         qtdVerdes++;
                     }
 
@@ -108,6 +108,6 @@ document.addEventListener("DOMContentLoaded", function () {
     setInterval(() => {
         plotarPessoasNoMapa();
         atualizarUsuariosAtivos();
-    }, 10000);
+    }, 3000);
 
 });
