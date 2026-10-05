@@ -238,18 +238,12 @@ document.addEventListener("DOMContentLoaded", function () {
         function criarBotaoModoRotacao() {
             const btn = document.createElement("button");
             btn.id = "btn-rotate-mode";
-            btn.textContent = rotationMode === 'device' ? "Modo: Tela" : "Modo: Rota";
+            btn.textContent = rotationMode === 'device' ? "Rodar" : "Alinhar";
             btn.style.position = "absolute";
             btn.style.top = "12px";
-            btn.style.right = "12px";
+            btn.style.right = "30px";
             btn.style.zIndex = 9999;
-            btn.style.padding = "8px 10px";
-            btn.style.background = "white";
-            btn.style.border = "1px solid #ccc";
-            btn.style.borderRadius = "6px";
-            btn.style.boxShadow = "0 1px 4px rgba(0,0,0,0.2)";
             btn.style.cursor = "pointer";
-            btn.style.fontSize = "13px";
             document.body.appendChild(btn);
 
             btn.addEventListener("click", () => {
@@ -266,12 +260,12 @@ document.addEventListener("DOMContentLoaded", function () {
             rotationMode = mode;
             const btn = document.getElementById("btn-rotate-mode");
             if (rotationMode === 'device') {
-                if (btn) btn.textContent = "Modo: Tela";
+                if (btn) btn.textContent = "Rodar";
                 ativarDeviceOrientation();
                 // if we have a device heading already, apply it immediately
                 if (deviceHeading !== null) map.rotateTo(deviceHeading, { duration: 120 });
             } else {
-                if (btn) btn.textContent = "Modo: Rota";
+                if (btn) btn.textContent = "Alinhar";
                 desativarDeviceOrientation();
                 if (ultimaLatitude !== null && ultimaLongitude !== null) orientarPelaRota(ultimaLatitude, ultimaLongitude);
             }
