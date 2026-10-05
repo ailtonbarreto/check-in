@@ -442,15 +442,19 @@ document.addEventListener("DOMContentLoaded", function () {
             // atualiza marker do carro (DOM)
             atualizarUserMarker(lat, lon);
 
-            // calcula e aplica rotação do ícone do carro (aponta direção do movimento)
-            if (ultimaPosParaRotacao) {
-                const b = calcularBearing(ultimaPosParaRotacao.lat, ultimaPosParaRotacao.lon, lat, lon);
-                rotacionarCarroPara(b);
-            }
-            ultimaPosParaRotacao = { lat, lon };
+       
+            if (rotaLatLngs.length > 1) {
+                const idx = pontoMaisProximo(lat, lon);
+                const proxIdx = Math.min(idx + 1, rotaLatLngs.length - 1);
+                const prox = rotaLatLngs[proxIdx];
+                const bearing = calcularBearing(lat, lon, prox[0], prox[1]);
 
-            // sempre orientar pela rota (mapa gira para manter próximo trecho apontando para cima)
-            orientarPelaRota(lat, lon);
+                // gira o mapa
+                map.rotateTo(bearing, { duration: 220 });
+                // gira o carro
+                rotacionarCarroPara(bearing);
+            }
+
 
             if (primeiraAtualizacao) {
                 map.jumpTo({ center: [lon, lat], zoom: 17 });
@@ -484,7 +488,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         watchId = navigator.geolocation.watchPosition(
                             atualizarLocalizacao,
                             tratarErroGeolocalizacao,
-                            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+                            { enableHighAccuracy: true, maximumAge: 0, timeout: 4000 }
                         );
                     }
                 },
