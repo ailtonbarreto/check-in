@@ -378,7 +378,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // ============================
         // MARKER DO CARRO (DOM) COM IMAGEM
         // ============================
-        function criarCarMarkerComImagem(srcUrl, size = 48) {
+        function criarCarMarkerComImagem(srcUrl, size = 72) {
             const el = document.createElement("div");
             el.className = "car-marker";
             el.style.width = size + "px";
@@ -405,7 +405,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         function atualizarUserMarker(lat, lon) {
             if (!userMarker) {
-                const el = criarCarMarkerComImagem(ICON_URL, 48);
+                const el = criarCarMarkerComImagem(ICON_URL, 72);
                 userMarker = new maplibregl.Marker({ element: el, anchor: "center" })
                     .setLngLat([lon, lat])
                     .addTo(map);
