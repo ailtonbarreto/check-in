@@ -189,7 +189,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // ============================
-        // GEOCODIFICAÇÃO (PHOTON)
+        // GEOCODIFICACAO (PHOTON)
         // ============================
         async function geocodificarEndereco(endereco) {
             const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(endereco)}&limit=1`;
@@ -210,7 +210,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // ============================
-        // DISTÂNCIA E SAÍDA DA ROTA
+        // DISTÂNCIA E SAIDA DA ROTA
         // ============================
         function distanciaEmMetros(lat1, lon1, lat2, lon2) {
             const R = 6371000;
@@ -236,7 +236,6 @@ document.addEventListener("DOMContentLoaded", function () {
             return menorDist > limite;
         }
 
-        // handler do botão IR (garante que calcularRota seja aguardado)
         btnIr.addEventListener("click", async () => {
             const texto = inputDestino.value.trim();
             lista.innerHTML = "";
@@ -257,7 +256,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
-        // calcularRota atualizado — chama orientarPelaRota assim que a rota estiver pronta
         async function calcularRota() {
             if (!ultimaLatitude || !ultimaLongitude) {
                 statusDiv.textContent = "Aguardando localização...";
@@ -280,7 +278,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
                 const coords = data.routes[0].geometry.coordinates; // [lon, lat]
-                // garante formato [lat, lon]
+
                 rotaLatLngs = coords.map(c => [c[1], c[0]]);
 
                 rotaGeoJSON = {
@@ -291,7 +289,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (map.getSource("rota")) {
                     map.getSource("rota").setData(rotaGeoJSON);
                 } else {
-                    // caso a fonte ainda não exista (defensivo)
+            
                     map.addSource("rota", { type: "geojson", data: rotaGeoJSON });
                     map.addLayer({
                         id: "rota-line",
@@ -326,10 +324,6 @@ document.addEventListener("DOMContentLoaded", function () {
         console.log("pos atual:", ultimaLatitude, ultimaLongitude);
 
 
-
-        // ============================
-        // MARKER DO CARRO (DOM) COM IMAGEM - tamanho fixo em pixels
-        // ============================
         function criarCarMarkerComImagem(srcUrl, sizePx = ICON_SIZE) {
             const el = document.createElement("div");
             el.className = "car-marker";
@@ -345,7 +339,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const img = document.createElement("img");
             img.src = srcUrl;
-            // define tamanho fixo na imagem para garantir que cresça
+      
             img.style.width = sizePx + "px";
             img.style.height = sizePx + "px";
             img.style.objectFit = "contain";
@@ -376,7 +370,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // ============================
         // DATA/HORA BRASIL (para envio)
-        // ============================
+
         function dataHoraBrasil() {
             const agora = new Date();
             const offsetMs = -3 * 60 * 60 * 1000;
@@ -415,7 +409,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        // inicia o envio periódico (5 segundos) — garante que não haja múltiplos intervalos
         function iniciarEnvioPeriodico() {
             if (sendIntervalId !== null) return;
             enviarPosicao();
@@ -429,8 +422,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        // ============================
-        // ATUALIZAÇÃO DE LOCALIZAÇÃO
+        // ATUALIZACAO DE LOCALIZACAO
         // ============================
         function atualizarLocalizacao(pos) {
             const lat = pos.coords.latitude;
@@ -439,9 +431,7 @@ document.addEventListener("DOMContentLoaded", function () {
             ultimaLongitude = lon;
             statusDiv.textContent = "Localização atualizada";
 
-            // atualiza marker do carro (DOM)
             atualizarUserMarker(lat, lon);
-
 
             if (rotaLatLngs.length > 1) {
                 const idx = pontoMaisProximo(lat, lon);
@@ -455,7 +445,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 rotacionarCarroPara(bearing);
             }
 
-
             if (primeiraAtualizacao) {
                 map.jumpTo({ center: [lon, lat], zoom: 17 });
                 primeiraAtualizacao = false;
@@ -467,7 +456,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
 
-            // garante que o envio periódico esteja ativo assim que tivermos posição
             iniciarEnvioPeriodico();
         }
 
@@ -505,14 +493,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
         iniciarWatch();
 
-        // limpa sugestões ao clicar fora
         document.addEventListener("click", (e) => {
             if (!inputDestino.contains(e.target) && !lista.contains(e.target)) {
                 lista.innerHTML = "";
             }
         });
 
-        // limpa watch e interval ao sair da página
         window.addEventListener("beforeunload", function () {
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
             pararEnvioPeriodico();
