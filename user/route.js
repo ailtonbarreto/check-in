@@ -479,12 +479,12 @@ document.addEventListener("DOMContentLoaded", function () {
                         watchId = navigator.geolocation.watchPosition(
                             atualizarLocalizacao,
                             tratarErroGeolocalizacao,
-                            { enableHighAccuracy: true, maximumAge: 0, timeout: 1000 }
+                            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
                         );
                     }
                 },
                 tratarErroGeolocalizacao,
-                { enableHighAccuracy: true, maximumAge: 0, timeout: 1000 }
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
             );
         }
 
