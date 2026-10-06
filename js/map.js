@@ -43,10 +43,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 const pessoasAtuais = new Set();
 
-                let qtdVerdes = 0;
+                let qtdOnline = 0;
+                let qtdEmRota = 0;
 
                 pessoas.forEach(pessoa => {
-
                     const id = pessoa.pessoa;
                     pessoasAtuais.add(id);
 
@@ -56,11 +56,17 @@ document.addEventListener("DOMContentLoaded", function () {
                     let diffSegundos = (agora - dataRegistro) / 1000;
                     if (diffSegundos < 0) diffSegundos = 0;
 
+                    // Ícone verde se dentro de 30 segundos, senão laranja
                     const icon = diffSegundos > 30 ? iconLaranja() : iconVerde();
 
-                    // Conta quantos estão verdes
+                    // Conta motoristas online (<= 30 segundos)
                     if (diffSegundos <= 30) {
-                        qtdVerdes++;
+                        qtdOnline++;
+                    }
+
+                    // Conta motoristas em rota (<= 10 segundos)
+                    if (diffSegundos <= 10) {
+                        qtdEmRota++;
                     }
 
                     if (marcadores[id]) {
@@ -70,14 +76,13 @@ document.addEventListener("DOMContentLoaded", function () {
                     marcadores[id] = L.marker([pessoa.lat, pessoa.lon], { icon })
                         .bindPopup(`<strong>${pessoa.pessoa}</strong>`)
                         .addTo(map);
-                        marcadores[id].openPopup();
+                    marcadores[id].openPopup();
                 });
 
-                // Atualiza o HTML
-                document.getElementById("qtd_online").innerHTML = qtdVerdes;
+             
+                document.getElementById("qtd_online").innerHTML = qtdOnline;
+                document.getElementById("qtd_em_rota").innerHTML = qtdEmRota;
 
-
-                // Remove quem sumiu da API
                 Object.keys(marcadores).forEach(id => {
                     if (!pessoasAtuais.has(id)) {
                         map.removeLayer(marcadores[id]);
@@ -95,6 +100,7 @@ document.addEventListener("DOMContentLoaded", function () {
     async function atualizarUsuariosAtivos() {
         try {
             const response = await fetch("https://api-checkin-7zte.onrender.com/usuarios_ativos");
+
             const data = await response.json();
 
             document.getElementById("qtd_user").innerHTML = data.total_ativos;
