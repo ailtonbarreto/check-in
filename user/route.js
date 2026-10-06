@@ -289,7 +289,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (map.getSource("rota")) {
                     map.getSource("rota").setData(rotaGeoJSON);
                 } else {
-            
+
                     map.addSource("rota", { type: "geojson", data: rotaGeoJSON });
                     map.addLayer({
                         id: "rota-line",
@@ -339,7 +339,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const img = document.createElement("img");
             img.src = srcUrl;
-      
+
             img.style.width = sizePx + "px";
             img.style.height = sizePx + "px";
             img.style.objectFit = "contain";
@@ -460,9 +460,12 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         function tratarErroGeolocalizacao(err) {
-            statusDiv.textContent = "Erro ao obter localização.";
-            console.error(err);
+            console.error("Erro geolocalização:", err.code, err.message);
+            if (err.code === 1) statusDiv.textContent = "Permissão negada.";
+            else if (err.code === 2) statusDiv.textContent = "Posição indisponível.";
+            else if (err.code === 3) statusDiv.textContent = "Tempo esgotado.";
         }
+
 
         function iniciarWatch() {
             if (!("geolocation" in navigator)) {
@@ -476,12 +479,12 @@ document.addEventListener("DOMContentLoaded", function () {
                         watchId = navigator.geolocation.watchPosition(
                             atualizarLocalizacao,
                             tratarErroGeolocalizacao,
-                            { enableHighAccuracy: true, maximumAge: 0, timeout: 4000 }
+                            { enableHighAccuracy: true, maximumAge: 0, timeout: 1000 }
                         );
                     }
                 },
                 tratarErroGeolocalizacao,
-                { enableHighAccuracy: true, maximumAge: 0, timeout: 4000 }
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 1000 }
             );
         }
 
