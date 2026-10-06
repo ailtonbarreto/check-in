@@ -112,7 +112,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let ultimaLatitude = null;
         let ultimaLongitude = null;
         let watchId = null;
-        let sendIntervalId = null; // ID do setInterval para envio de posição
+        let sendIntervalId = null;
 
         let destinoFixo = null;
         let destinoMarker = null;
@@ -185,7 +185,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const proxIdx = Math.min(idx + 1, rotaLatLngs.length - 1);
             const prox = rotaLatLngs[proxIdx];
             const bearing = calcularBearing(lat, lon, prox[0], prox[1]);
-            map.rotateTo(bearing, { duration: 220 });
+            map.rotateTo(bearing, { duration: 0 });
         }
 
         // ============================
@@ -442,7 +442,7 @@ document.addEventListener("DOMContentLoaded", function () {
             // atualiza marker do carro (DOM)
             atualizarUserMarker(lat, lon);
 
-       
+
             if (rotaLatLngs.length > 1) {
                 const idx = pontoMaisProximo(lat, lon);
                 const proxIdx = Math.min(idx + 1, rotaLatLngs.length - 1);
@@ -493,9 +493,15 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
                 },
                 tratarErroGeolocalizacao,
-                { enableHighAccuracy: true, maximumAge: 0, timeout: 7000 }
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 4000 }
             );
         }
+
+        setInterval(() => {
+            if (ultimaLatitude !== null && ultimaLongitude !== null) {
+                orientarPelaRota(ultimaLatitude, ultimaLongitude);
+            }
+        }, 500);
 
         iniciarWatch();
 
