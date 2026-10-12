@@ -19,6 +19,19 @@
         <p id="status">Aguardando localização...</p>
     </header>
 
+    <!-- Overlay de instruções / setas -->
+    <div id="turn-overlay" aria-live="polite">
+        <div id="turn-arrow" class="hidden">
+            <div class="arrow-icon"></div>
+            <div class="turn-info">
+                <div class="turn-action">Vire à direita</div>
+                <div class="turn-distance">Em 120 m</div>
+                <div class="turn-street"></div>
+            </div>
+        </div>
+    </div>
+
+
     <div class="destino-box">
         <input id="destino-input" type="text" placeholder="Digite o destino:" style="width:70%; padding:8px;">
         <div id="autocomplete-list" class="autocomplete-items"></div>

@@ -70,7 +70,8 @@ body {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
 }
 
-.destino-box button, #btn-rotate-mode {
+.destino-box button,
+#btn-rotate-mode {
     width: 20%;
     background-color: var(--primary-color);
     padding: 0.7rem;
@@ -90,7 +91,7 @@ body {
     margin-top: 10vh;
     max-height: 200px;
     overflow-y: auto;
-    z-index: 9999;
+    z-index: 99;
     border-radius: 0.4rem;
 }
 
@@ -140,8 +141,6 @@ body {
     height: 100%;
 }
 
-
-
 .btn_container {
     height: 20vh;
     width: 90%;
@@ -162,6 +161,89 @@ body {
     cursor: pointer;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
 }
+
+#turn-overlay {
+    position: fixed;
+    right: 25px;
+    top: 130px;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+#turn-arrow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    transform-origin: left center;
+    transition: transform 300ms ease, opacity 300ms ease;
+    opacity: 1;
+}
+
+#turn-arrow.hidden {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+    pointer-events: none;
+}
+
+.arrow-icon {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #fff, #ddd);
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+    transform-origin: 50% 50%;
+}
+
+/* SVG seta dentro do .arrow-icon */
+.arrow-icon svg {
+    width: 36px;
+    height: 36px;
+}
+
+/* texto */
+.turn-info {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+}
+
+.turn-action {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.turn-distance {
+    font-size: 13px;
+    opacity: 0.9;
+}
+
+.turn-street {
+    font-size: 12px;
+    opacity: 0.8;
+    margin-top: 4px;
+}
+
+/* variações */
+#turn-arrow.left .arrow-icon {
+    background: linear-gradient(180deg, #ffecd5, #ffb88c);
+}
+
+#turn-arrow.right .arrow-icon {
+    background: linear-gradient(180deg, #dff0ff, #8fcfff);
+}
+
+#turn-arrow.straight .arrow-icon {
+    background: linear-gradient(180deg, #e8ffd9, #9fe08a);
+}
+
 
 @media (max-width: 768px) {
     #exit-btn {
