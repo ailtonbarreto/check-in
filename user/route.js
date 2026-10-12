@@ -11,28 +11,42 @@ document.addEventListener("DOMContentLoaded", function () {
     async function buscarSugestoes(query) {
         if (!query || query.length < 3) return [];
 
-        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5`;
-
+        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=10`;
         try {
             const resp = await fetch(url);
             const dados = await resp.json();
-
-            return dados.features.map(f => ({
-                display_name: [
+            const items = dados.features.map(f => {
+                const display_name = [
                     f.properties.name,
                     f.properties.street,
                     f.properties.city,
                     f.properties.state,
                     f.properties.country
-                ].filter(Boolean).join(", "),
-                lat: f.geometry.coordinates[1],
-                lon: f.geometry.coordinates[0]
-            }));
+                ].filter(Boolean).join(", ");
+                return {
+                    display_name,
+                    lat: f.geometry.coordinates[1],
+                    lon: f.geometry.coordinates[0],
+                    id: f.properties.osm_id || f.properties.osm_key || `${f.geometry.coordinates[0]},${f.geometry.coordinates[1]}`
+                };
+            });
+
+            const seen = new Set();
+            const unique = [];
+            for (const it of items) {
+                const key = it.display_name.trim().toLowerCase();
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    unique.push(it);
+                }
+            }
+            return unique.slice(0, 5); // mantém o limit desejado
         } catch (e) {
             console.error("Erro ao buscar sugestões:", e);
             return [];
         }
     }
+
 
     // ============================
     // Aguarda MapLibre carregado
@@ -283,6 +297,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const coords = data.routes[0].geometry.coordinates; // [lon, lat]
 
                 rotaLatLngs = coords.map(c => [c[1], c[0]]);
+
 
                 rotaGeoJSON = {
                     type: "FeatureCollection",
