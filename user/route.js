@@ -34,7 +34,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-
     // ============================
     // Aguarda MapLibre carregado
     // ============================
@@ -53,7 +52,7 @@ document.addEventListener("DOMContentLoaded", function () {
     whenMapLibreReady(initMap);
 
     // ============================
-    // MAPA (MapLibre GL JS) - sempre alinhado pela rota (sem alternância)
+    // MAPA (MapLibre GL JS)
     // ============================
     function initMap() {
 
@@ -81,7 +80,9 @@ document.addEventListener("DOMContentLoaded", function () {
             bearing: 0
         });
 
-        // dentro de initMap(), perto do início (após declarar variáveis de estado)
+        // ============================
+        // Autocomplete debounce
+        // ============================
         let debounceTimer = null;
         inputDestino.addEventListener("input", () => {
             clearTimeout(debounceTimer);
@@ -106,8 +107,9 @@ document.addEventListener("DOMContentLoaded", function () {
             }, 220);
         });
 
-
-        // estado
+        // ============================
+        // Estado
+        // ============================
         let primeiraAtualizacao = true;
         let ultimaLatitude = null;
         let ultimaLongitude = null;
@@ -125,7 +127,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // configurações do ícone do carro
         const ICON_URL = "car.png"; // troque pela sua URL ou DataURL
-        const ICON_SIZE = 96; // ajuste aqui o tamanho em pixels (ex.: 48, 72, 96, 128)
+        const ICON_SIZE = 96; // ajuste aqui o tamanho em pixels
 
         // adiciona fonte/layer para rota
         map.on("load", () => {
@@ -135,7 +137,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 type: "line",
                 source: "rota",
                 layout: { "line-join": "round", "line-cap": "round" },
-                paint: { "line-color": "#1976d2", "line-width": 5 }
+                paint: { "line-color": "#19AF8C", "line-width": 5 }
             });
         });
 
@@ -185,7 +187,8 @@ document.addEventListener("DOMContentLoaded", function () {
             const proxIdx = Math.min(idx + 1, rotaLatLngs.length - 1);
             const prox = rotaLatLngs[proxIdx];
             const bearing = calcularBearing(lat, lon, prox[0], prox[1]);
-            map.rotateTo(bearing, { duration: 0 });
+            // usamos rotação suave com easing customizado abaixo
+            rotateMapSmooth(bearing);
         }
 
         // ============================
@@ -289,7 +292,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (map.getSource("rota")) {
                     map.getSource("rota").setData(rotaGeoJSON);
                 } else {
-
                     map.addSource("rota", { type: "geojson", data: rotaGeoJSON });
                     map.addLayer({
                         id: "rota-line",
@@ -300,14 +302,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     });
                 }
 
-
                 map.easeTo({ center: [ultimaLongitude, ultimaLatitude], zoom: 17, duration: 300 });
 
                 statusDiv.textContent = "Rota calculada";
 
-
                 await new Promise(r => setTimeout(r, 80));
-
 
                 if (ultimaLatitude !== null && ultimaLongitude !== null) {
                     orientarPelaRota(ultimaLatitude, ultimaLongitude);
@@ -323,11 +322,12 @@ document.addEventListener("DOMContentLoaded", function () {
         console.log("primeiros pontos rota:", rotaLatLngs.slice(0, 3));
         console.log("pos atual:", ultimaLatitude, ultimaLongitude);
 
-
+        // ============================
+        // Cria marcador do carro
+        // ============================
         function criarCarMarkerComImagem(srcUrl, sizePx = ICON_SIZE) {
             const el = document.createElement("div");
             el.className = "car-marker";
-            // define tamanho do container explicitamente
             el.style.width = sizePx + "px";
             el.style.height = sizePx + "px";
             el.style.display = "flex";
@@ -339,7 +339,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const img = document.createElement("img");
             img.src = srcUrl;
-
             img.style.width = sizePx + "px";
             img.style.height = sizePx + "px";
             img.style.objectFit = "contain";
@@ -361,16 +360,88 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        function rotacionarCarroPara(bearing) {
-            if (!userMarker) return;
-            const el = userMarker.getElement();
-            // aplica rotação no elemento pai (container) — mantém tamanho
-            el.style.transform = `rotate(${bearing}deg)`;
+        // ============================
+        // EASING HELPERS
+        // ============================
+        function easeOutCubic(t) {
+            return 1 - Math.pow(1 - t, 3);
+        }
+        function easeInOutQuad(t) {
+            return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        }
+
+        // ============================
+        // ROTACAO SUAVE DO CARRO (requestAnimationFrame)
+        // ============================
+        let ultimoBearing = 0;
+        let carroAnimFrame = null;
+
+        function rotacionarCarroGradualmente(novoBearing, duracao = 1000, easing = easeOutCubic) {
+            if (!userMarker) {
+                ultimoBearing = novoBearing;
+                return;
+            }
+            cancelAnimationFrame(carroAnimFrame);
+
+            // normaliza diferença para o menor caminho
+            let diff = novoBearing - ultimoBearing;
+            if (diff > 180) diff -= 360;
+            if (diff < -180) diff += 360;
+
+            const start = performance.now();
+            const inicio = ultimoBearing;
+
+            function step(now) {
+                const elapsed = now - start;
+                const t = Math.min(1, elapsed / duracao);
+                const eased = easing(t);
+                const current = inicio + diff * eased;
+                const el = userMarker.getElement();
+                el.style.transform = `rotate(${current}deg)`;
+                if (t < 1) {
+                    carroAnimFrame = requestAnimationFrame(step);
+                } else {
+                    ultimoBearing = (inicio + diff + 360) % 360;
+                }
+            }
+            carroAnimFrame = requestAnimationFrame(step);
+        }
+
+        // ============================
+        // ROTACAO SUAVE DO MAPA (usa map.rotateTo com easing e fallback)
+        // ============================
+        let mapaAnimTimeout = null;
+        function rotateMapSmooth(targetBearing) {
+            // calcula diferença para decidir duração/easing
+            const current = (map.getBearing && typeof map.getBearing === "function") ? map.getBearing() : 0;
+            let diff = Math.abs(((targetBearing - current + 540) % 360) - 180); // menor ângulo
+            // duração baseada na intensidade da curva
+            let duracao;
+            let easingFunc;
+            if (diff < 15) {
+                duracao = 400;
+                easingFunc = t => t; // quase linear para pequenas correções
+            } else if (diff < 60) {
+                duracao = 900;
+                easingFunc = easeOutCubic;
+            } else {
+                duracao = 1200;
+                easingFunc = t => easeInOutQuad(t);
+            }
+
+            // MapLibre aceita easing: function(t) { ... }
+            try {
+                map.rotateTo(targetBearing, { duration: duracao, easing: easingFunc });
+            } catch (e) {
+                // fallback manual se rotateTo não suportar easing function
+                if (mapaAnimTimeout) clearTimeout(mapaAnimTimeout);
+                map.rotateTo(targetBearing, { duration: 0 });
+            }
         }
 
         // ============================
         // DATA/HORA BRASIL (para envio)
-
+        // ============================
         function dataHoraBrasil() {
             const agora = new Date();
             const offsetMs = -3 * 60 * 60 * 1000;
@@ -422,6 +493,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
+        // ============================
         // ATUALIZACAO DE LOCALIZACAO
         // ============================
         function atualizarLocalizacao(pos) {
@@ -439,10 +511,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 const prox = rotaLatLngs[proxIdx];
                 const bearing = calcularBearing(lat, lon, prox[0], prox[1]);
 
-                // gira o mapa
-                map.rotateTo(bearing, { duration: 220 });
-                // gira o carro
-                rotacionarCarroPara(bearing);
+                // gira o mapa suavemente e o carro com mesma duração/easing adaptativa
+                rotateMapSmooth(bearing);
+
+                // escolhe duração do carro baseada na intensidade da curva (mais natural)
+                const currentMapBearing = (map.getBearing && typeof map.getBearing === "function") ? map.getBearing() : 0;
+                let diff = Math.abs(((bearing - currentMapBearing + 540) % 360) - 180);
+                let duracaoCarro = diff < 15 ? 400 : diff < 60 ? 900 : 1200;
+                // carro usa easing ligeiramente mais responsiva
+                rotacionarCarroGradualmente(bearing, duracaoCarro, t => easeOutCubic(t));
             }
 
             if (primeiraAtualizacao) {
@@ -466,7 +543,6 @@ document.addEventListener("DOMContentLoaded", function () {
             else if (err.code === 3) statusDiv.textContent = "Tempo esgotado.";
         }
 
-
         function iniciarWatch() {
             if (!("geolocation" in navigator)) {
                 statusDiv.textContent = "Geolocalização não suportada.";
@@ -479,7 +555,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         watchId = navigator.geolocation.watchPosition(
                             atualizarLocalizacao,
                             tratarErroGeolocalizacao,
-                            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000}
+                            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
                         );
                     }
                 },
@@ -488,6 +564,7 @@ document.addEventListener("DOMContentLoaded", function () {
             );
         }
 
+        // mantém orientação alinhada periodicamente (caso necessário)
         setInterval(() => {
             if (ultimaLatitude !== null && ultimaLongitude !== null) {
                 orientarPelaRota(ultimaLatitude, ultimaLongitude);
@@ -505,6 +582,7 @@ document.addEventListener("DOMContentLoaded", function () {
         window.addEventListener("beforeunload", function () {
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
             pararEnvioPeriodico();
+            if (carroAnimFrame) cancelAnimationFrame(carroAnimFrame);
         });
     }
 });
