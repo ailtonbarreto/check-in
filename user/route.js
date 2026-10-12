@@ -386,6 +386,15 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // ============================
+        // NORMALIZA ÂNGULO (-180..180)
+        // ============================
+        function normalizeAngle(angle) {
+            // retorna ângulo no intervalo -180..180
+            let a = ((angle + 180) % 360 + 360) % 360 - 180;
+            return a;
+        }
+
+        // ============================
         // OVERLAY HTML DE SETAS (pool)
         // ============================
         function criarOverlaySetasHTML() {
@@ -424,6 +433,7 @@ document.addEventListener("DOMContentLoaded", function () {
             mostrarProximaSetaHTML();
         }
 
+        // Atualiza a seta visível aplicando rotação relativa ao mapa
         function mostrarProximaSetaHTML() {
             const overlay = document.getElementById("turn-arrow");
             if (!overlay) return;
@@ -447,7 +457,14 @@ document.addEventListener("DOMContentLoaded", function () {
             overlay.classList.add(tp.type || "straight");
 
             const icon = overlay.querySelector(".arrow-icon");
-            icon.style.transform = `rotate(${tp.bearing}deg)`;
+
+            // --- ROTACAO CORRETA: bearing da rota relativo ao bearing atual do mapa ---
+            const mapBearing = (map.getBearing && typeof map.getBearing === "function") ? map.getBearing() : 0;
+            let screenAngle = normalizeAngle(tp.bearing - mapBearing);
+
+            // aplica rotação relativa (ajuste visual se seu SVG aponta em outra direção)
+            icon.style.transform = `rotate(${screenAngle}deg)`;
+
             if (!icon.querySelector("svg")) {
                 icon.innerHTML = `<svg viewBox="0 0 24 24" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 12h12" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 6l6 6-6 6" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
             }
@@ -501,7 +518,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const b1 = calcularBearing(prev[0], prev[1], cur[0], cur[1]);
                 const b2 = calcularBearing(cur[0], cur[1], next[0], next[1]);
                 let diff = b2 - b1;
-                diff = ((diff + 540) % 360) - 180;
+                diff = ((diff + 540) % 360) - 90;
                 const absDiff = Math.abs(diff);
                 const d1 = distanciaEmMetros(prev[0], prev[1], cur[0], cur[1]);
                 const d2 = distanciaEmMetros(cur[0], cur[1], next[0], next[1]);
@@ -566,6 +583,22 @@ document.addEventListener("DOMContentLoaded", function () {
         map.on("dragend", () => resumeHeavyWorkDebounced(300));
         map.on("movestart", () => pauseHeavyWork());
         map.on("moveend", () => resumeHeavyWorkDebounced(300));
+
+        // Atualiza seta enquanto o mapa gira (compensa rotação do mapa)
+        map.on("rotate", () => {
+            if (currentHtmlTurnIndex !== null && htmlTurnPoints && htmlTurnPoints[currentHtmlTurnIndex]) {
+                const tp = htmlTurnPoints[currentHtmlTurnIndex];
+                const icon = document.querySelector("#turn-arrow .arrow-icon");
+                if (!icon) return;
+                const mapBearing = (map.getBearing && typeof map.getBearing === "function") ? map.getBearing() : 0;
+                const screenAngle = normalizeAngle(tp.bearing - mapBearing);
+                icon.style.transform = `rotate(${screenAngle}deg)`;
+            }
+        });
+        map.on("rotateend", () => {
+            // força atualização final
+            mostrarProximaSetaHTML();
+        });
 
         // canvas pointer fallback
         const canvas = map.getCanvas();
