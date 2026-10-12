@@ -173,6 +173,10 @@ document.addEventListener("DOMContentLoaded", function () {
         let ultimoBearing = 0;
         let carroAnimFrame = null;
 
+        // throttle marker updates
+        let lastMarkerUpdate = 0;
+        const MARKER_MIN_INTERVAL = 80; // ms (ajuste conforme necessidade)
+
         // setas de orientação (dados e HTML pool)
         let turnPoints = []; // detectados na rota
         let htmlTurnPoints = []; // pool para overlay HTML
@@ -193,7 +197,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 type: "line",
                 source: "rota",
                 layout: { "line-join": "round", "line-cap": "round" },
-                paint: { "line-color": "#1976d2", "line-width": 5 }
+                paint: { "line-color": "#19AF8C", "line-width": 5 }
             });
         });
 
@@ -265,7 +269,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // ============================
-        // CRIAR E ATUALIZAR MARKER DO CARRO
+        // CRIAR E ATUALIZAR MARKER DO CARRO (cria apenas uma vez)
         // ============================
         function criarCarMarkerComImagem(srcUrl, sizePx = ICON_SIZE) {
             const el = document.createElement("div");
@@ -278,11 +282,12 @@ document.addEventListener("DOMContentLoaded", function () {
             el.style.pointerEvents = "none";
             el.style.transformOrigin = "center center";
             el.style.willChange = "transform";
+            el.style.backfaceVisibility = "hidden";
 
             const img = document.createElement("img");
-            img.src = srcUrl;
-            img.style.width = sizePx + "px";
-            img.style.height = sizePx + "px";
+            img.src = srcUrl;           // define uma vez
+            img.style.width = "100%";
+            img.style.height = "100%";
             img.style.objectFit = "contain";
             img.alt = "carro";
             img.draggable = false;
@@ -302,6 +307,18 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
+        // versão throttled para reduzir flicker
+        function atualizarUserMarkerThrottled(lat, lon) {
+            const now = Date.now();
+            if (now - lastMarkerUpdate < MARKER_MIN_INTERVAL) {
+                // ainda atualiza a posição (sem recriar), mas evita operações pesadas
+                if (userMarker) userMarker.setLngLat([lon, lat]);
+                return;
+            }
+            lastMarkerUpdate = now;
+            atualizarUserMarker(lat, lon);
+        }
+
         // ============================
         // EASING HELPERS
         // ============================
@@ -309,7 +326,7 @@ document.addEventListener("DOMContentLoaded", function () {
         function easeInOutQuad(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
 
         // ============================
-        // ROTACAO SUAVE DO CARRO (requestAnimationFrame)
+        // ROTACAO SUAVE DO CARRO (requestAnimationFrame) - cancela animações anteriores
         // ============================
         function rotacionarCarroGradualmente(novoBearing, duracao = 1000, easing = easeOutCubic) {
             if (!userMarker) {
@@ -376,6 +393,9 @@ document.addEventListener("DOMContentLoaded", function () {
             const container = document.createElement("div");
             container.id = "turn-overlay";
             container.style.position = "fixed";
+            container.style.left = "18px";
+            container.style.bottom = "18px";
+            container.style.zIndex = "9999";
             container.style.pointerEvents = "none";
             container.innerHTML = `
               <div id="turn-arrow" class="hidden" style="display:flex;align-items:center;gap:12px;background:rgba(0,0,0,0.75);color:#fff;padding:10px 14px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.35);transform-origin:left center;transition:transform 300ms ease,opacity 300ms ease;opacity:0;transform:translateY(8px) scale(0.98);">
@@ -603,7 +623,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // ============================
-        // CALCULAR ROTA (OSRM) - substitui a sua função
+        // CALCULAR ROTA (OSRM)
         // ============================
         async function calcularRota() {
             if (!ultimaLatitude || !ultimaLongitude) {
@@ -677,7 +697,8 @@ document.addEventListener("DOMContentLoaded", function () {
             ultimaLongitude = lon;
             statusDiv.textContent = "Localização atualizada";
 
-            atualizarUserMarker(lat, lon);
+            // usa versão throttled para evitar flicker
+            atualizarUserMarkerThrottled(lat, lon);
 
             if (rotaLatLngs.length > 1) {
                 const idx = pontoMaisProximo(lat, lon);
@@ -700,7 +721,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (!isUserInteracting) calcularRota();
             } else {
                 if (!isUserInteracting) {
-                    map.panTo([lon, lat], { duration: 300 });
+                    // só pan se distância do centro for significativa para evitar movimentos pequenos que causam flicker
+                    const center = map.getCenter();
+                    const distToCenter = distanciaEmMetros(lat, lon, center.lat, center.lng);
+                    if (distToCenter > 8) {
+                        map.panTo([lon, lat], { duration: 300 });
+                    }
                     if (estaForaDaRota(lat, lon)) {
                         calcularRota();
                     }
