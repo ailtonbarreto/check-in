@@ -739,6 +739,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // ============================
         // ATUALIZAÇÃO DE LOCALIZAÇÃO (watchPosition)
         // ============================
+        // Substitua sua função atualizarLocalizacao por esta
         function atualizarLocalizacao(pos) {
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
@@ -746,50 +747,92 @@ document.addEventListener("DOMContentLoaded", function () {
             ultimaLongitude = lon;
             statusDiv.textContent = "Localização atualizada";
 
-            // usa versão throttled para evitar flicker
+            // atualiza marker (throttled)
             atualizarUserMarkerThrottled(lat, lon);
 
+            // primeira vez: centraliza e define zoom
+            if (primeiraAtualizacao) {
+                map.jumpTo({ center: [lon, lat], zoom: 17 });
+                primeiraAtualizacao = false;
+            } else if (seguirCarro) {
+                map.panTo([lon, lat], { duration: 300 });
+            }
+
+            // se houver rota, calcula rumo à frente (próximo segmento)
             if (rotaLatLngs.length > 1) {
                 const idx = pontoMaisProximo(lat, lon);
                 const proxIdx = Math.min(idx + 1, rotaLatLngs.length - 1);
                 const prox = rotaLatLngs[proxIdx];
-                const bearing = calcularBearing(lat, lon, prox[0], prox[1]);
 
-                if (!isUserInteracting) {
-                    rotateMapSmooth(bearing);
-                    const currentMapBearing = (map.getBearing && typeof map.getBearing === "function") ? map.getBearing() : 0;
-                    let diff = Math.abs(((bearing - currentMapBearing + 540) % 360) - 180);
-                    let duracaoCarro = diff < 15 ? 400 : diff < 60 ? 900 : 1200;
-                    rotacionarCarroGradualmente(bearing, duracaoCarro, t => easeOutCubic(t));
-                }
-            }
+                // rumo da rota (bearing do ponto atual para o próximo)
+                const routeBearing = calcularBearing(lat, lon, prox[0], prox[1]);
 
-            if (primeiraAtualizacao) {
-                map.jumpTo({ center: [lon, lat], zoom: 17 });
-                primeiraAtualizacao = false;
-                if (!isUserInteracting) calcularRota();
-            } else {
-                if (!isUserInteracting) {
-                    // só pan se distância do centro for significativa para evitar movimentos pequenos que causam flicker
-                    const center = map.getCenter();
-                    const distToCenter = distanciaEmMetros(lat, lon, center.lat, center.lng);
-                    if (distToCenter > 8) {
-                        map.panTo([lon, lat], { duration: 300 });
-                    }
-                    if (estaForaDaRota(lat, lon)) {
-                        calcularRota();
-                    }
-                }
-            }
+                // rotaciona sempre o ícone do carro para mostrar direção real
+                rotacionarCarroGradualmente(routeBearing);
 
-            // atualiza overlay de setas
-            if (!isUserInteracting) {
-                mostrarProximaSetaHTML();
+                // gira o mapa apenas se estivermos nos aproximando de uma curva
+                rotateMapIfApproachingTurn(lat, lon, idx, routeBearing);
+
+                // atualiza overlay de setas
                 checarPassagemSetaHTML();
             }
 
             iniciarEnvioPeriodico();
         }
+
+        // Nova função: gira o mapa somente quando houver curva à frente
+        function rotateMapIfApproachingTurn(lat, lon, currentIdx, routeBearing) {
+            // parâmetros ajustáveis
+            const TURN_DETECT_DIST_M = 80;      // considera "aproximando" se a curva estiver dentro de 80 m
+            const ANGLE_THRESHOLD_DEG = 18;     // diferença mínima de ângulo para girar o mapa
+            const MIN_ROTATE_INTERVAL_MS = 1200; // intervalo mínimo entre rotações do mapa
+            const MIN_DIST_TO_NEXT_SEGMENT_M = 6; // evita girar quando muito perto do próximo ponto
+
+            if (!seguirCarro) return;           // não gira se usuário desativou follow
+            if (isUserInteracting) return;       // não gira durante interação do usuário
+
+            // encontra o próximo turnPoint cujo idx > currentIdx
+            let nextTurn = null;
+            for (let i = 0; i < turnPoints.length; i++) {
+                if (turnPoints[i].idx > currentIdx) { nextTurn = turnPoints[i]; break; }
+            }
+
+            // se não houver curva à frente, não girar
+            if (!nextTurn) return;
+
+            // só considerar curvas (type !== 'straight')
+            if (!nextTurn.type || nextTurn.type === "straight") return;
+
+            // distância até o ponto de virada
+            const distToTurn = distanciaEmMetros(lat, lon, nextTurn.lat, nextTurn.lon);
+            if (distToTurn > TURN_DETECT_DIST_M) return; // curva muito longe: não girar ainda
+
+            // distância até o próximo segmento (evita girar quando muito perto)
+            const proxIdx = Math.min(currentIdx + 1, rotaLatLngs.length - 1);
+            const prox = rotaLatLngs[proxIdx];
+            const distToNext = distanciaEmMetros(lat, lon, prox[0], prox[1]);
+            if (distToNext <= MIN_DIST_TO_NEXT_SEGMENT_M) return;
+
+            // checa diferença angular entre mapa atual e rumo da rota
+            const mapBearing = (map.getBearing && typeof map.getBearing === "function") ? map.getBearing() : 0;
+            const angleDiff = Math.abs(((routeBearing - mapBearing + 540) % 360) - 180);
+
+            if (angleDiff < ANGLE_THRESHOLD_DEG) return;
+
+            // rate-limit para evitar jitter
+            if (!window._lastMapRotateTime) window._lastMapRotateTime = 0;
+            const now = Date.now();
+            if (now - window._lastMapRotateTime < MIN_ROTATE_INTERVAL_MS) return;
+            window._lastMapRotateTime = now;
+
+            // finalmente, gira o mapa suavemente para o rumo da rota
+            try {
+                map.rotateTo(routeBearing, { duration: 700, easing: t => 1 - Math.pow(1 - t, 3) });
+            } catch (e) {
+                map.rotateTo(routeBearing, { duration: 0 });
+            }
+        }
+
 
         function tratarErroGeolocalizacao(err) {
             console.error("Erro geolocalização:", err.code, err.message);
@@ -817,19 +860,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 tratarErroGeolocalizacao,
                 { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
             );
-        }
-
-        // ============================
-        // ESTA FORA DA ROTA (verifica distância mínima)
-        // ============================
-        function estaForaDaRota(lat, lon, limite = 30) {
-            if (rotaLatLngs.length === 0) return true;
-            let menorDist = Infinity;
-            for (let i = 0; i < rotaLatLngs.length; i++) {
-                const dist = distanciaEmMetros(lat, lon, rotaLatLngs[i][0], rotaLatLngs[i][1]);
-                if (dist < menorDist) menorDist = dist;
-            }
-            return menorDist > limite;
         }
 
         // ============================
