@@ -154,6 +154,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let primeiraAtualizacao = true;
         let ultimaLatitude = null;
         let ultimaLongitude = null;
+        let ultimaPosicao = null;
         let watchId = null;
         let sendIntervalId = null;
 
@@ -260,7 +261,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // ORIENTAR MAPA PELA ROTA (usa rotateMapSmooth)
         // ============================
         function orientarPelaRota(lat, lon) {
-            if (rotaLatLngs.length < 2) return;
+            if (isUserInteracting || rotaLatLngs.length < 2) return;
             const idx = pontoMaisProximo(lat, lon);
             const proxIdx = Math.min(idx + 1, rotaLatLngs.length - 1);
             const prox = rotaLatLngs[proxIdx];
@@ -363,6 +364,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // ROTACAO SUAVE DO MAPA (com adaptação por intensidade)
         // ============================
         function rotateMapSmooth(targetBearing) {
+            if (isUserInteracting) return;
             const current = (map.getBearing && typeof map.getBearing === "function") ? map.getBearing() : 0;
             let diff = Math.abs(((targetBearing - current + 540) % 360) - 180);
             let duracao;
@@ -557,6 +559,10 @@ document.addEventListener("DOMContentLoaded", function () {
         // PAUSA E RETOMA DE TAREFAS PESADAS DURANTE INTERAÇÃO DO USUÁRIO
         // ============================
         function pauseHeavyWork() {
+            if (resumeTimeout) {
+                clearTimeout(resumeTimeout);
+                resumeTimeout = null;
+            }
             if (isUserInteracting) return;
             isUserInteracting = true;
             if (sendIntervalId !== null) {
@@ -573,7 +579,7 @@ document.addEventListener("DOMContentLoaded", function () {
             statusDiv.textContent = "Interação do usuário — tarefas pausadas";
         }
 
-        function resumeHeavyWorkDebounced(delay = 300) {
+        function resumeHeavyWorkDebounced(delay = 5000) {
             if (resumeTimeout) clearTimeout(resumeTimeout);
             resumeTimeout = setTimeout(() => {
                 resumeHeavyWork();
@@ -584,6 +590,9 @@ document.addEventListener("DOMContentLoaded", function () {
         function resumeHeavyWork() {
             if (!isUserInteracting) return;
             isUserInteracting = false;
+            if (ultimaPosicao) {
+                processarLocalizacao(ultimaPosicao.coords.latitude, ultimaPosicao.coords.longitude);
+            }
             if (wasSending && sendIntervalId === null) {
                 enviarPosicao();
                 sendIntervalId = setInterval(enviarPosicao, 5000);
@@ -596,12 +605,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // MapLibre interaction events
         map.on("dragstart", () => pauseHeavyWork());
-        map.on("dragend", () => resumeHeavyWorkDebounced(300));
-        map.on("movestart", () => pauseHeavyWork());
-        map.on("moveend", () => resumeHeavyWorkDebounced(300));
+        map.on("dragend", () => resumeHeavyWorkDebounced());
 
         // Atualiza seta enquanto o mapa gira (compensa rotação do mapa)
         map.on("rotate", () => {
+            if (isUserInteracting) return;
             if (currentHtmlTurnIndex !== null && htmlTurnPoints && htmlTurnPoints[currentHtmlTurnIndex]) {
                 const tp = htmlTurnPoints[currentHtmlTurnIndex];
                 const icon = document.querySelector("#turn-arrow .arrow-icon");
@@ -612,6 +620,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
         map.on("rotateend", () => {
+            if (isUserInteracting) return;
             // força atualização final
             mostrarProximaSetaHTML();
         });
@@ -619,8 +628,8 @@ document.addEventListener("DOMContentLoaded", function () {
         // canvas pointer fallback
         const canvas = map.getCanvas();
         canvas.addEventListener("pointerdown", () => pauseHeavyWork());
-        canvas.addEventListener("pointerup", () => resumeHeavyWorkDebounced(300));
-        canvas.addEventListener("pointercancel", () => resumeHeavyWorkDebounced(300));
+        canvas.addEventListener("pointerup", () => resumeHeavyWorkDebounced());
+        canvas.addEventListener("pointercancel", () => resumeHeavyWorkDebounced());
 
         // ============================
         // DATA/HORA BRASIL (para envio)
@@ -636,7 +645,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // ENVIO PARA API (a cada 5s)
         // ============================
         async function enviarPosicao() {
-            if (ultimaLatitude === null || ultimaLongitude === null) return;
+            if (isUserInteracting || ultimaLatitude === null || ultimaLongitude === null) return;
             statusDiv.textContent = "Enviando...";
             const payload = {
                 pessoa: localStorage.getItem("nome") || "Desconhecido",
@@ -651,15 +660,16 @@ document.addEventListener("DOMContentLoaded", function () {
                     body: JSON.stringify(payload)
                 });
                 if (!resp.ok) throw new Error("Resposta não OK: " + resp.status);
+                if (isUserInteracting) return;
                 statusDiv.textContent = "Localização enviada";
             } catch (err) {
                 console.error("Erro ao enviar posição:", err);
-                statusDiv.textContent = "Erro ao enviar";
+                if (!isUserInteracting) statusDiv.textContent = "Erro ao enviar";
             }
         }
 
         function iniciarEnvioPeriodico() {
-            if (sendIntervalId !== null) return;
+            if (isUserInteracting || sendIntervalId !== null) return;
             enviarPosicao();
             sendIntervalId = setInterval(enviarPosicao, 5000);
         }
@@ -675,6 +685,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // CALCULAR ROTA (OSRM)
         // ============================
         async function calcularRota() {
+            if (isUserInteracting) return;
             if (!ultimaLatitude || !ultimaLongitude) {
                 statusDiv.textContent = "Aguardando localização...";
                 return;
@@ -690,6 +701,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 statusDiv.textContent = "Calculando rota...";
                 const response = await fetch(url);
                 const data = await response.json();
+                if (isUserInteracting) return;
 
                 if (!data.routes || !data.routes[0] || !data.routes[0].geometry) {
                     throw new Error("Resposta de rota inválida");
@@ -726,25 +738,32 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 await new Promise(r => setTimeout(r, 80));
 
-                if (ultimaLatitude !== null && ultimaLongitude !== null) {
+                if (!isUserInteracting && ultimaLatitude !== null && ultimaLongitude !== null) {
                     orientarPelaRota(ultimaLatitude, ultimaLongitude);
                 }
 
             } catch (err) {
                 console.error("Erro ao calcular rota:", err);
-                statusDiv.textContent = "Erro ao calcular rota";
+                if (!isUserInteracting) statusDiv.textContent = "Erro ao calcular rota";
             }
         }
 
         // ============================
         // ATUALIZAÇÃO DE LOCALIZAÇÃO (watchPosition)
         // ============================
-        // Substitua sua função atualizarLocalizacao por esta
         function atualizarLocalizacao(pos) {
+            ultimaPosicao = pos;
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
             ultimaLatitude = lat;
             ultimaLongitude = lon;
+            if (isUserInteracting) return;
+
+            processarLocalizacao(lat, lon);
+            iniciarEnvioPeriodico();
+        }
+
+        function processarLocalizacao(lat, lon) {
             statusDiv.textContent = "Localização atualizada";
 
             // atualiza marker (throttled)
@@ -776,8 +795,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 // atualiza overlay de setas
                 checarPassagemSetaHTML();
             }
-
-            iniciarEnvioPeriodico();
         }
 
         // Nova função: gira o mapa somente quando houver curva à frente
@@ -915,7 +932,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // mantém orientação alinhada periodicamente (caso necessário)
         setInterval(() => {
-            if (ultimaLatitude !== null && ultimaLongitude !== null) {
+            if (!isUserInteracting && ultimaLatitude !== null && ultimaLongitude !== null) {
                 orientarPelaRota(ultimaLatitude, ultimaLongitude);
             }
         }, 500);
