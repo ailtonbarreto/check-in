@@ -401,14 +401,10 @@ document.addEventListener("DOMContentLoaded", function () {
             if (document.getElementById("turn-overlay")) return;
             const container = document.createElement("div");
             container.id = "turn-overlay";
-            container.style.position = "fixed";
-            container.style.left = "18px";
-            container.style.bottom = "18px";
-            container.style.zIndex = "9999";
             container.style.pointerEvents = "none";
             container.innerHTML = `
-              <div id="turn-arrow" class="hidden" style="display:flex;align-items:center;gap:12px;background:rgba(0,0,0,0.75);color:#fff;padding:10px 14px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.35);transform-origin:left center;transition:transform 300ms ease,opacity 300ms ease;opacity:0;transform:translateY(8px) scale(0.98);">
-                <div class="arrow-icon" style="width:56px;height:56px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#fff,#ddd);border-radius:50%;box-shadow:0 4px 10px rgba(0,0,0,0.25);transform-origin:50% 50%;"></div>
+              <div id="turn-arrow">
+                <div class="arrow-icon"></div>
                 <div class="turn-info" style="display:flex;flex-direction:column;line-height:1;">
                   <div class="turn-action" style="font-weight:700;font-size:14px;"></div>
                   <div class="turn-distance" style="font-size:13px;opacity:0.9;"></div>
@@ -433,7 +429,6 @@ document.addEventListener("DOMContentLoaded", function () {
             mostrarProximaSetaHTML();
         }
 
-        // Atualiza a seta visível aplicando rotação relativa ao mapa
         function mostrarProximaSetaHTML() {
             const overlay = document.getElementById("turn-arrow");
             if (!overlay) return;
@@ -453,21 +448,13 @@ document.addEventListener("DOMContentLoaded", function () {
             currentHtmlTurnIndex = prox;
             const tp = htmlTurnPoints[prox];
 
-            overlay.classList.remove("left","right","straight","hidden");
-            overlay.classList.add(tp.type || "straight");
-
             const icon = overlay.querySelector(".arrow-icon");
-
-            // --- ROTACAO CORRETA: bearing da rota relativo ao bearing atual do mapa ---
-            const mapBearing = (map.getBearing && typeof map.getBearing === "function") ? map.getBearing() : 0;
-            let screenAngle = normalizeAngle(tp.bearing - mapBearing);
-
-            // aplica rotação relativa (ajuste visual se seu SVG aponta em outra direção)
-            icon.style.transform = `rotate(${screenAngle}deg)`;
-
-            if (!icon.querySelector("svg")) {
-                icon.innerHTML = `<svg viewBox="0 0 24 24" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 12h12" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 6l6 6-6 6" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+            switch (tp.type) {
+                case "left": icon.textContent = "turn_left"; break;
+                case "right": icon.textContent = "turn_right"; break;
+                default: icon.textContent = "arrow_forward";
             }
+
             overlay.querySelector(".turn-action").textContent = tp.type === "left" ? "Vire à esquerda" : tp.type === "right" ? "Vire à direita" : "Siga em frente";
             const dist = Math.round(distanciaEmMetros(ultimaLatitude, ultimaLongitude, tp.lat, tp.lon));
             overlay.querySelector(".turn-distance").textContent = `Em ${dist} m`;
@@ -477,6 +464,7 @@ document.addEventListener("DOMContentLoaded", function () {
             overlay.style.transform = "translateY(0) scale(1)";
             overlay.classList.remove("hidden");
         }
+
 
         function esconderOverlaySeta() {
             const overlay = document.getElementById("turn-arrow");
@@ -503,25 +491,28 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        // ============================
-        // DETECÇÃO DE PONTOS DE VIRADA (após rota calculada)
-        // ============================
         function detectarPontosDeVirada() {
             turnPoints = [];
             if (!rotaLatLngs || rotaLatLngs.length < 3) return;
-            const ANGLE_THRESHOLD = 25;
-            const MIN_SEGMENT_DISTANCE = 5;
+
+            const ANGLE_THRESHOLD = 25;          // ângulo mínimo para considerar curva
+            const MIN_SEGMENT_DISTANCE = 5;      // distância mínima entre pontos
+
             for (let i = 1; i < rotaLatLngs.length - 1; i++) {
                 const prev = rotaLatLngs[i - 1];
                 const cur = rotaLatLngs[i];
                 const next = rotaLatLngs[i + 1];
+
                 const b1 = calcularBearing(prev[0], prev[1], cur[0], cur[1]);
                 const b2 = calcularBearing(cur[0], cur[1], next[0], next[1]);
+
                 let diff = b2 - b1;
-                diff = ((diff + 540) % 360) - 90;
+                diff = ((diff + 540) % 360) - 180; // normaliza para -180..180
                 const absDiff = Math.abs(diff);
+
                 const d1 = distanciaEmMetros(prev[0], prev[1], cur[0], cur[1]);
                 const d2 = distanciaEmMetros(cur[0], cur[1], next[0], next[1]);
+
                 if (absDiff >= ANGLE_THRESHOLD && d1 > MIN_SEGMENT_DISTANCE && d2 > MIN_SEGMENT_DISTANCE) {
                     const type = diff > 0 ? "right" : "left";
                     turnPoints.push({
@@ -531,11 +522,36 @@ document.addEventListener("DOMContentLoaded", function () {
                         bearing: b2,
                         type,
                         angle: absDiff,
-                        street: "" // opcional: preencher via reverse-geocode se desejar
+                        street: "" // opcional
                     });
+
+                    atualizarSetaDirecao(type);
+                } else {
+                    atualizarSetaDirecao("straight");
                 }
             }
         }
+
+        function atualizarSetaDirecao(type) {
+            const arrowIcon = document.querySelector(".arrow-icon");
+            if (!arrowIcon) return;
+
+            switch (type) {
+                case "left":
+                    arrowIcon.textContent = "turn_left";
+                    break;
+                case "right":
+                    arrowIcon.textContent = "turn_right";
+                    break;
+                case "straight":
+                    arrowIcon.textContent = "arrow_forward";
+                    break;
+                default:
+                    arrowIcon.textContent = "arrow_forward";
+            }
+        }
+
+
 
         // ============================
         // PAUSA E RETOMA DE TAREFAS PESADAS DURANTE INTERAÇÃO DO USUÁRIO
@@ -592,7 +608,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (!icon) return;
                 const mapBearing = (map.getBearing && typeof map.getBearing === "function") ? map.getBearing() : 0;
                 const screenAngle = normalizeAngle(tp.bearing - mapBearing);
-                icon.style.transform = `rotate(${screenAngle}deg)`;
+                // icon.style.transform = `rotate(${screenAngle}deg)`;
             }
         });
         map.on("rotateend", () => {

@@ -51,9 +51,9 @@ body {
 #status {
     font-weight: 700;
     font-size: 1.05rem;
-    text-align: left;
+    text-align: center;
     width: 100%;
-    color: var(--primary-color);
+    color: red;
 }
 
 .destino-box {
@@ -191,28 +191,21 @@ body {
 }
 
 .arrow-icon {
-    width: 56px;
-    height: 56px;
+    height: auto;
     display: flex;
-    align-items: center;
+    color: #f3b301;
+    font-size: 12vw !important;
+    text-align: center;
     justify-content: center;
-    background: linear-gradient(180deg, #fff, #ddd);
-    border-radius: 50%;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-    transform-origin: 50% 50%;
 }
 
-/* SVG seta dentro do .arrow-icon */
-.arrow-icon svg {
-    width: 36px;
-    height: 36px;
-}
+
 
 /* texto */
 .turn-info {
     display: flex;
     flex-direction: column;
-    line-height: 1;
+    line-height: 2;
 }
 
 .turn-action {
