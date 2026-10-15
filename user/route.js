@@ -605,7 +605,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (ultimaLatitude !== null && ultimaLongitude !== null && destinoFixo) {
                 calcularRota();
             }
-            statusDiv.textContent = "Pronto";
+            statusDiv.textContent = "Tudo Certo!";
         }
 
         // MapLibre interaction events
