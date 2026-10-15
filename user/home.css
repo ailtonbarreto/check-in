@@ -188,7 +188,7 @@ footer {
 #turn-overlay {
     position: fixed;
     right: 25px;
-    top: 25vw;
+    top: 14vh;
     z-index: 9999;
     pointer-events: none;
 }

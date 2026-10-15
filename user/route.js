@@ -1010,7 +1010,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (carroAnimFrame) cancelAnimationFrame(carroAnimFrame);
         });
 
-        // expõe algumas funções para debug no console (opcional)
+      
         window.__debugMap = {
             map, calcularRota, detectarPontosDeVirada, rotaLatLngs
         };
