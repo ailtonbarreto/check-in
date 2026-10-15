@@ -7,6 +7,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const inputDestino = document.getElementById("destino-input");
     const lista = document.getElementById("autocomplete-list");
     const btnIr = document.getElementById("btn-ir");
+    const btnExplorar = document.getElementById("explore-btn");
+    const btnNavegar = document.getElementById("navigate-btn");
+    let selecionarDestino = null;
 
     // ============================
     // UTIL: debounce
@@ -79,13 +82,7 @@ document.addEventListener("DOMContentLoaded", function () {
             item.addEventListener("click", async () => {
                 inputDestino.value = s.display_name;
                 lista.innerHTML = "";
-                destinoFixo = { lat: parseFloat(s.lat), lon: parseFloat(s.lon) };
-                if (!isUserInteracting) {
-                    await calcularRota();
-                    if (ultimaLatitude !== null && ultimaLongitude !== null) {
-                        orientarPelaRota(ultimaLatitude, ultimaLongitude);
-                    }
-                }
+                if (selecionarDestino) await selecionarDestino(s);
             });
             // proteção extra contra duplicatas na UI
             if (!Array.from(lista.children).some(c => c.textContent === s.display_name)) {
@@ -155,7 +152,10 @@ document.addEventListener("DOMContentLoaded", function () {
         let ultimaLatitude = null;
         let ultimaLongitude = null;
         let watchId = null;
+        let watchGeneration = 0;
         let sendIntervalId = null;
+        let orientationIntervalId = null;
+        let navigationActive = true;
 
         let destinoFixo = null;
         let destinoMarker = null;
@@ -186,6 +186,15 @@ document.addEventListener("DOMContentLoaded", function () {
         let isUserInteracting = false;
         let resumeTimeout = null;
         let wasSending = false;
+
+        selecionarDestino = async (sugestao) => {
+            destinoFixo = { lat: parseFloat(sugestao.lat), lon: parseFloat(sugestao.lon) };
+            if (!navigationActive || isUserInteracting) return;
+            await calcularRota();
+            if (ultimaLatitude !== null && ultimaLongitude !== null) {
+                orientarPelaRota(ultimaLatitude, ultimaLongitude);
+            }
+        };
 
         // ============================
         // Adiciona source/layer rota ao carregar mapa
@@ -557,7 +566,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // PAUSA E RETOMA DE TAREFAS PESADAS DURANTE INTERAÇÃO DO USUÁRIO
         // ============================
         function pauseHeavyWork() {
-            if (isUserInteracting) return;
+            if (!navigationActive || isUserInteracting) return;
             isUserInteracting = true;
             if (sendIntervalId !== null) {
                 wasSending = true;
@@ -574,6 +583,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         function resumeHeavyWorkDebounced(delay = 300) {
+            if (!navigationActive) return;
             if (resumeTimeout) clearTimeout(resumeTimeout);
             resumeTimeout = setTimeout(() => {
                 resumeHeavyWork();
@@ -582,6 +592,10 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         function resumeHeavyWork() {
+            if (!navigationActive) {
+                isUserInteracting = false;
+                return;
+            }
             if (!isUserInteracting) return;
             isUserInteracting = false;
             if (wasSending && sendIntervalId === null) {
@@ -636,7 +650,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // ENVIO PARA API (a cada 5s)
         // ============================
         async function enviarPosicao() {
-            if (ultimaLatitude === null || ultimaLongitude === null) return;
+            if (!navigationActive || ultimaLatitude === null || ultimaLongitude === null) return;
             statusDiv.textContent = "Enviando...";
             const payload = {
                 pessoa: localStorage.getItem("nome") || "Desconhecido",
@@ -651,15 +665,15 @@ document.addEventListener("DOMContentLoaded", function () {
                     body: JSON.stringify(payload)
                 });
                 if (!resp.ok) throw new Error("Resposta não OK: " + resp.status);
-                statusDiv.textContent = "Localização enviada";
+                if (navigationActive) statusDiv.textContent = "Localização enviada";
             } catch (err) {
                 console.error("Erro ao enviar posição:", err);
-                statusDiv.textContent = "Erro ao enviar";
+                if (navigationActive) statusDiv.textContent = "Erro ao enviar";
             }
         }
 
         function iniciarEnvioPeriodico() {
-            if (sendIntervalId !== null) return;
+            if (!navigationActive || sendIntervalId !== null) return;
             enviarPosicao();
             sendIntervalId = setInterval(enviarPosicao, 5000);
         }
@@ -675,6 +689,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // CALCULAR ROTA (OSRM)
         // ============================
         async function calcularRota() {
+            if (!navigationActive) return;
             if (!ultimaLatitude || !ultimaLongitude) {
                 statusDiv.textContent = "Aguardando localização...";
                 return;
@@ -689,7 +704,9 @@ document.addEventListener("DOMContentLoaded", function () {
             try {
                 statusDiv.textContent = "Calculando rota...";
                 const response = await fetch(url);
+                if (!navigationActive) return;
                 const data = await response.json();
+                if (!navigationActive) return;
 
                 if (!data.routes || !data.routes[0] || !data.routes[0].geometry) {
                     throw new Error("Resposta de rota inválida");
@@ -726,13 +743,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 await new Promise(r => setTimeout(r, 80));
 
-                if (ultimaLatitude !== null && ultimaLongitude !== null) {
+                if (navigationActive && ultimaLatitude !== null && ultimaLongitude !== null) {
                     orientarPelaRota(ultimaLatitude, ultimaLongitude);
                 }
 
             } catch (err) {
                 console.error("Erro ao calcular rota:", err);
-                statusDiv.textContent = "Erro ao calcular rota";
+                if (navigationActive) statusDiv.textContent = "Erro ao calcular rota";
             }
         }
 
@@ -741,6 +758,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // ============================
         // Substitua sua função atualizarLocalizacao por esta
         function atualizarLocalizacao(pos) {
+            if (!navigationActive) return;
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
             ultimaLatitude = lat;
@@ -835,6 +853,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         function tratarErroGeolocalizacao(err) {
+            if (!navigationActive) return;
             console.error("Erro geolocalização:", err.code, err.message);
             if (err.code === 1) statusDiv.textContent = "Permissão negada.";
             else if (err.code === 2) statusDiv.textContent = "Posição indisponível.";
@@ -842,25 +861,81 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         function iniciarWatch() {
+            if (!navigationActive || watchId !== null) return;
             if (!("geolocation" in navigator)) {
                 statusDiv.textContent = "Geolocalização não suportada.";
                 return;
             }
+            const generation = ++watchGeneration;
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
+                    if (!navigationActive || generation !== watchGeneration) return;
                     atualizarLocalizacao(pos);
+                    if (destinoFixo) calcularRota();
                     if (watchId === null) {
                         watchId = navigator.geolocation.watchPosition(
-                            atualizarLocalizacao,
-                            tratarErroGeolocalizacao,
+                            (position) => {
+                                if (generation === watchGeneration) atualizarLocalizacao(position);
+                            },
+                            (error) => {
+                                if (generation === watchGeneration) tratarErroGeolocalizacao(error);
+                            },
                             { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
                         );
                     }
                 },
-                tratarErroGeolocalizacao,
+                (error) => {
+                    if (generation === watchGeneration) tratarErroGeolocalizacao(error);
+                },
                 { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
             );
         }
+
+        function atualizarEstadoBotoesNavegacao() {
+            btnExplorar.disabled = !navigationActive;
+            btnNavegar.disabled = navigationActive;
+        }
+
+        function pausarNavegacao() {
+            if (!navigationActive) return;
+            navigationActive = false;
+            watchGeneration++;
+
+            if (resumeTimeout !== null) {
+                clearTimeout(resumeTimeout);
+                resumeTimeout = null;
+            }
+            isUserInteracting = false;
+            wasSending = false;
+            pararEnvioPeriodico();
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            if (orientationIntervalId !== null) {
+                clearInterval(orientationIntervalId);
+                orientationIntervalId = null;
+            }
+            if (carroAnimFrame !== null) {
+                cancelAnimationFrame(carroAnimFrame);
+                carroAnimFrame = null;
+            }
+            map.stop();
+            atualizarEstadoBotoesNavegacao();
+            statusDiv.textContent = "Modo explorar — navegação pausada";
+        }
+
+        function retomarNavegacao() {
+            if (navigationActive) return;
+            navigationActive = true;
+            atualizarEstadoBotoesNavegacao();
+            statusDiv.textContent = "Retomando localização...";
+            iniciarAtualizacaoOrientacao();
+            iniciarWatch();
+        }
+
+        btnExplorar.addEventListener("click", pausarNavegacao);
+        btnNavegar.addEventListener("click", retomarNavegacao);
 
         // ============================
         // BOTÃO "IR" (geocodifica e calcula rota)
@@ -878,7 +953,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (destinoMarker) destinoMarker.remove();
             destinoMarker = new maplibregl.Marker().setLngLat([destino.lon, destino.lat]).addTo(map);
 
-            if (!isUserInteracting) {
+            if (navigationActive && !isUserInteracting) {
                 await calcularRota();
                 if (ultimaLatitude !== null && ultimaLongitude !== null) {
                     orientarPelaRota(ultimaLatitude, ultimaLongitude);
@@ -911,19 +986,27 @@ document.addEventListener("DOMContentLoaded", function () {
         // Inicializações finais
         // ============================
         criarOverlaySetasHTML();
+        atualizarEstadoBotoesNavegacao();
         iniciarWatch();
 
         // mantém orientação alinhada periodicamente (caso necessário)
-        setInterval(() => {
-            if (ultimaLatitude !== null && ultimaLongitude !== null) {
-                orientarPelaRota(ultimaLatitude, ultimaLongitude);
-            }
-        }, 500);
+        function iniciarAtualizacaoOrientacao() {
+            if (orientationIntervalId !== null) return;
+            orientationIntervalId = setInterval(() => {
+                if (navigationActive && ultimaLatitude !== null && ultimaLongitude !== null) {
+                    orientarPelaRota(ultimaLatitude, ultimaLongitude);
+                }
+            }, 500);
+        }
+        iniciarAtualizacaoOrientacao();
 
         // cleanup on unload
         window.addEventListener("beforeunload", function () {
+            navigationActive = false;
+            watchGeneration++;
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
             pararEnvioPeriodico();
+            if (orientationIntervalId !== null) clearInterval(orientationIntervalId);
             if (carroAnimFrame) cancelAnimationFrame(carroAnimFrame);
         });
 

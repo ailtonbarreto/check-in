@@ -16,11 +16,6 @@
 
 <body>
 
-    <header class="header">
-        <p id="status">Aguardando localização...</p>
-    </header>
-
-    <!-- Overlay de instruções / setas -->
     <div id="turn-overlay" aria-live="polite">
         <div id="turn-arrow" class="hidden">
             <div class="arrow-icon material-symbols-outlined">arrow_forward</div>
@@ -40,13 +35,23 @@
         <button id="btn-ir" style="padding:8px;">Ir</button>
     </div>
 
+    <div class="navigation-controls">
+        <button id="explore-btn" type="button">Explorar</button>
+        <button id="navigate-btn" type="button" disabled>Navegar</button>
+    </div>
+
     <div id="map-container">
         <div id="map-rotating">
             <div id="map"></div>
         </div>
     </div>
 
+    <footer class="header">
+        <p id="status">Aguardando localização...</p>
+    </footer>
+
     <div class="btn_container">
+
         <button id="exit-btn" onclick="location.href='index.html'">Sair</button>
     </div>
 
