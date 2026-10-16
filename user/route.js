@@ -349,9 +349,7 @@ document.addEventListener("DOMContentLoaded", function () {
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
         function easeInOutQuad(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
 
-        // ============================
-        // ROTACAO SUAVE DO MAPA (com adaptação por intensidade)
-        // ============================
+
         function rotateMapSmooth(targetBearing) {
             const bearing = (targetBearing + 360) % 360;
             if (ultimoBearingSolicitado !== null &&
@@ -363,7 +361,8 @@ document.addEventListener("DOMContentLoaded", function () {
             ultimoBearingSolicitado = bearing;
             let duracao;
             let easingFunc;
-            if (diff < 15) {
+            // GIRA MAPA DOIDEIRA
+            if (diff < 25) {
                 duracao = 400;
                 easingFunc = t => t;
             } else if (diff < 60) {
