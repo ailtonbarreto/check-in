@@ -168,19 +168,22 @@ document.addEventListener("DOMContentLoaded", function () {
         const ICON_URL = "car.png";
         const ICON_SIZE = 96;
 
-        // rotação carro
+
         let ultimoBearing = 0;
         let carroAnimFrame = null;
 
-        // throttle marker updates
         let lastMarkerUpdate = 0;
-        const MARKER_MIN_INTERVAL = 80; // ms (ajuste conforme necessidade)
+        const MARKER_MIN_INTERVAL = 80;
 
-        // setas de orientação (dados e HTML pool)
+      
         let turnPoints = []; // detectados na rota
-        let ultimoIndiceViradaAlinhado = -1;
         let htmlTurnPoints = []; // pool para overlay HTML
         let currentHtmlTurnIndex = null;
+        let ultimoBearingMapa = null;
+        let ultimaPosicaoDirecao = null;
+        const VELOCIDADE_MINIMA_RUMO = 1.5;
+        const DISTANCIA_MINIMA_RUMO = 8;
+        const DIFERENCA_MINIMA_ROTACAO = 25;
 
         // controle de interação do usuário (grab/drag)
         let isUserInteracting = false;
@@ -274,6 +277,40 @@ document.addEventListener("DOMContentLoaded", function () {
             const proxIdx = Math.min(idx + 1, rotaLatLngs.length - 1);
             const prox = rotaLatLngs[proxIdx];
             const bearing = calcularBearing(lat, lon, prox[0], prox[1]);
+            rotateMapSmooth(bearing);
+        }
+
+        function orientarMapaPeloDeslocamento(lat, lon, heading, speed) {
+            if (isUserInteracting) return;
+
+            let bearing = null;
+            if (Number.isFinite(heading) && (speed === null || speed === undefined || speed >= VELOCIDADE_MINIMA_RUMO)) {
+                bearing = heading;
+                ultimaPosicaoDirecao = { lat, lon };
+            } else if (ultimaPosicaoDirecao) {
+                const distancia = distanciaEmMetros(
+                    ultimaPosicaoDirecao.lat,
+                    ultimaPosicaoDirecao.lon,
+                    lat,
+                    lon
+                );
+                if (distancia >= DISTANCIA_MINIMA_RUMO) {
+                    bearing = calcularBearing(
+                        ultimaPosicaoDirecao.lat,
+                        ultimaPosicaoDirecao.lon,
+                        lat,
+                        lon
+                    );
+                    ultimaPosicaoDirecao = { lat, lon };
+                }
+            } else {
+                ultimaPosicaoDirecao = { lat, lon };
+            }
+
+            if (bearing === null) return;
+            if (ultimoBearingMapa !== null &&
+                Math.abs(normalizeAngle(bearing - ultimoBearingMapa)) < DIFERENCA_MINIMA_ROTACAO) return;
+
             rotateMapSmooth(bearing);
         }
 
@@ -372,6 +409,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // ROTACAO SUAVE DO MAPA (com adaptação por intensidade)
         // ============================
         function rotateMapSmooth(targetBearing) {
+            ultimoBearingMapa = (targetBearing + 360) % 360;
             const current = (map.getBearing && typeof map.getBearing === "function") ? map.getBearing() : 0;
             let diff = Math.abs(((targetBearing - current + 540) % 360) - 180);
             let duracao;
@@ -717,9 +755,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 // detectar pontos de virada e popular overlay HTML
                 detectarPontosDeVirada();
-                ultimoIndiceViradaAlinhado = ultimaLatitude !== null && ultimaLongitude !== null
-                    ? pontoMaisProximo(ultimaLatitude, ultimaLongitude)
-                    : -1;
                 popularOverlaySetasHTML();
 
                 rotaGeoJSON = {
@@ -775,7 +810,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (primeiraAtualizacao) {
                 map.jumpTo({ center: [lon, lat], zoom: 17 });
                 primeiraAtualizacao = false;
-            } else if (seguirCarro) {
+            } else if (!isUserInteracting) {
                 map.panTo([lon, lat], { duration: 300 });
             }
 
@@ -791,8 +826,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 // rotaciona sempre o ícone do carro para mostrar direção real
                 rotacionarCarroGradualmente(routeBearing);
 
-                // alinha o mapa quando o carro passa por uma mudança de direção
-                alinharMapaAposVirada(idx);
+                // Orienta o mapa pelo deslocamento real, não pelos pontos de curva da rota.
+                orientarMapaPeloDeslocamento(lat, lon, pos.coords.heading, pos.coords.speed);
 
                 // atualiza overlay de setas
                 checarPassagemSetaHTML();
@@ -800,23 +835,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
             iniciarEnvioPeriodico();
         }
-
-        function alinharMapaAposVirada(currentIdx) {
-            if (!seguirCarro || isUserInteracting) return;
-
-            let viradaPassada = null;
-            for (const turn of turnPoints) {
-                if (turn.idx > ultimoIndiceViradaAlinhado && turn.idx <= currentIdx) {
-                    viradaPassada = turn;
-                }
-            }
-
-            if (!viradaPassada) return;
-
-            ultimoIndiceViradaAlinhado = viradaPassada.idx;
-            rotateMapSmooth(viradaPassada.bearing);
-        }
-
 
         function tratarErroGeolocalizacao(err) {
             if (!navigationActive) return;
