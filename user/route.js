@@ -154,7 +154,6 @@ document.addEventListener("DOMContentLoaded", function () {
         let watchId = null;
         let watchGeneration = 0;
         let sendIntervalId = null;
-        let orientationIntervalId = null;
         let navigationActive = true;
 
         let destinoFixo = null;
@@ -179,6 +178,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // setas de orientação (dados e HTML pool)
         let turnPoints = []; // detectados na rota
+        let ultimoIndiceViradaAlinhado = -1;
         let htmlTurnPoints = []; // pool para overlay HTML
         let currentHtmlTurnIndex = null;
 
@@ -717,6 +717,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 // detectar pontos de virada e popular overlay HTML
                 detectarPontosDeVirada();
+                ultimoIndiceViradaAlinhado = ultimaLatitude !== null && ultimaLongitude !== null
+                    ? pontoMaisProximo(ultimaLatitude, ultimaLongitude)
+                    : -1;
                 popularOverlaySetasHTML();
 
                 rotaGeoJSON = {
@@ -788,8 +791,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 // rotaciona sempre o ícone do carro para mostrar direção real
                 rotacionarCarroGradualmente(routeBearing);
 
-                // gira o mapa apenas se estivermos nos aproximando de uma curva
-                rotateMapIfApproachingTurn(lat, lon, idx, routeBearing);
+                // alinha o mapa quando o carro passa por uma mudança de direção
+                alinharMapaAposVirada(idx);
 
                 // atualiza overlay de setas
                 checarPassagemSetaHTML();
@@ -798,57 +801,20 @@ document.addEventListener("DOMContentLoaded", function () {
             iniciarEnvioPeriodico();
         }
 
-        // Nova função: gira o mapa somente quando houver curva à frente
-        function rotateMapIfApproachingTurn(lat, lon, currentIdx, routeBearing) {
-            // parâmetros ajustáveis
-            const TURN_DETECT_DIST_M = 80;      // considera "aproximando" se a curva estiver dentro de 80 m
-            const ANGLE_THRESHOLD_DEG = 18;     // diferença mínima de ângulo para girar o mapa
-            const MIN_ROTATE_INTERVAL_MS = 1200; // intervalo mínimo entre rotações do mapa
-            const MIN_DIST_TO_NEXT_SEGMENT_M = 6; // evita girar quando muito perto do próximo ponto
+        function alinharMapaAposVirada(currentIdx) {
+            if (!seguirCarro || isUserInteracting) return;
 
-            if (!seguirCarro) return;           // não gira se usuário desativou follow
-            if (isUserInteracting) return;       // não gira durante interação do usuário
-
-            // encontra o próximo turnPoint cujo idx > currentIdx
-            let nextTurn = null;
-            for (let i = 0; i < turnPoints.length; i++) {
-                if (turnPoints[i].idx > currentIdx) { nextTurn = turnPoints[i]; break; }
+            let viradaPassada = null;
+            for (const turn of turnPoints) {
+                if (turn.idx > ultimoIndiceViradaAlinhado && turn.idx <= currentIdx) {
+                    viradaPassada = turn;
+                }
             }
 
-            // se não houver curva à frente, não girar
-            if (!nextTurn) return;
+            if (!viradaPassada) return;
 
-            // só considerar curvas (type !== 'straight')
-            if (!nextTurn.type || nextTurn.type === "straight") return;
-
-            // distância até o ponto de virada
-            const distToTurn = distanciaEmMetros(lat, lon, nextTurn.lat, nextTurn.lon);
-            if (distToTurn > TURN_DETECT_DIST_M) return; // curva muito longe: não girar ainda
-
-            // distância até o próximo segmento (evita girar quando muito perto)
-            const proxIdx = Math.min(currentIdx + 1, rotaLatLngs.length - 1);
-            const prox = rotaLatLngs[proxIdx];
-            const distToNext = distanciaEmMetros(lat, lon, prox[0], prox[1]);
-            if (distToNext <= MIN_DIST_TO_NEXT_SEGMENT_M) return;
-
-            // checa diferença angular entre mapa atual e rumo da rota
-            const mapBearing = (map.getBearing && typeof map.getBearing === "function") ? map.getBearing() : 0;
-            const angleDiff = Math.abs(((routeBearing - mapBearing + 540) % 360) - 180);
-
-            if (angleDiff < ANGLE_THRESHOLD_DEG) return;
-
-            // rate-limit para evitar jitter
-            if (!window._lastMapRotateTime) window._lastMapRotateTime = 0;
-            const now = Date.now();
-            if (now - window._lastMapRotateTime < MIN_ROTATE_INTERVAL_MS) return;
-            window._lastMapRotateTime = now;
-
-            // finalmente, gira o mapa suavemente para o rumo da rota
-            try {
-                map.rotateTo(routeBearing, { duration: 700, easing: t => 1 - Math.pow(1 - t, 3) });
-            } catch (e) {
-                map.rotateTo(routeBearing, { duration: 0 });
-            }
+            ultimoIndiceViradaAlinhado = viradaPassada.idx;
+            rotateMapSmooth(viradaPassada.bearing);
         }
 
 
@@ -912,10 +878,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null;
             }
-            if (orientationIntervalId !== null) {
-                clearInterval(orientationIntervalId);
-                orientationIntervalId = null;
-            }
             if (carroAnimFrame !== null) {
                 cancelAnimationFrame(carroAnimFrame);
                 carroAnimFrame = null;
@@ -930,7 +892,6 @@ document.addEventListener("DOMContentLoaded", function () {
             navigationActive = true;
             atualizarEstadoBotoesNavegacao();
             statusDiv.textContent = "Retomando localização...";
-            iniciarAtualizacaoOrientacao();
             iniciarWatch();
         }
 
@@ -989,24 +950,12 @@ document.addEventListener("DOMContentLoaded", function () {
         atualizarEstadoBotoesNavegacao();
         iniciarWatch();
 
-        // mantém orientação alinhada periodicamente (caso necessário)
-        function iniciarAtualizacaoOrientacao() {
-            if (orientationIntervalId !== null) return;
-            orientationIntervalId = setInterval(() => {
-                if (navigationActive && ultimaLatitude !== null && ultimaLongitude !== null) {
-                    orientarPelaRota(ultimaLatitude, ultimaLongitude);
-                }
-            }, 500);
-        }
-        iniciarAtualizacaoOrientacao();
-
         // cleanup on unload
         window.addEventListener("beforeunload", function () {
             navigationActive = false;
             watchGeneration++;
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
             pararEnvioPeriodico();
-            if (orientationIntervalId !== null) clearInterval(orientationIntervalId);
             if (carroAnimFrame) cancelAnimationFrame(carroAnimFrame);
         });
 
