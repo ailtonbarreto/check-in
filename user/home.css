@@ -165,7 +165,7 @@ footer {
 }
 
 .navigation-controls button[aria-checked="false"] {
-    background-color: var(--primary-color);
+    background-color: red;
 }
 
 .navigation-toggle-track {

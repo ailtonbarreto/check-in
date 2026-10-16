@@ -163,7 +163,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // user marker (carro)
         let userMarker = null;
-        let userCarIcon = null;
 
         // ícone carro
         const ICON_URL = "car.png";
@@ -178,9 +177,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let turnPoints = []; // detectados na rota
         let htmlTurnPoints = []; // pool para overlay HTML
         let currentHtmlTurnIndex = null;
-        let ultimoBearingMapa = null;
-        let ultimoBearingRota = null;
-        const DIFERENCA_MINIMA_ROTACAO = 25;
+        let ultimoBearingSolicitado = null;
 
         // controle de interação do usuário (grab/drag)
         let isUserInteracting = false;
@@ -265,16 +262,34 @@ document.addEventListener("DOMContentLoaded", function () {
             return melhor;
         }
 
+        function calcularRumoAdianteNaRota(lat, lon) {
+            const idx = pontoMaisProximo(lat, lon);
+            const inicio = rotaLatLngs[idx];
+            if (!inicio || idx >= rotaLatLngs.length - 1) return null;
+
+            let distanciaAcumulada = 0;
+            let prox = rotaLatLngs[idx + 1];
+            for (let i = idx + 1; i < rotaLatLngs.length; i++) {
+                prox = rotaLatLngs[i];
+                distanciaAcumulada += distanciaEmMetros(
+                    rotaLatLngs[i - 1][0],
+                    rotaLatLngs[i - 1][1],
+                    prox[0],
+                    prox[1]
+                );
+                if (distanciaAcumulada >= 20) break;
+            }
+
+            return calcularBearing(inicio[0], inicio[1], prox[0], prox[1]);
+        }
+
         // ============================
         // ORIENTAR MAPA PELA ROTA (usa rotateMapSmooth)
         // ============================
         function orientarPelaRota(lat, lon) {
             if (rotaLatLngs.length < 2) return;
-            const idx = pontoMaisProximo(lat, lon);
-            const proxIdx = Math.min(idx + 1, rotaLatLngs.length - 1);
-            const prox = rotaLatLngs[proxIdx];
-            const bearing = calcularBearing(lat, lon, prox[0], prox[1]);
-            rotateMapSmooth(bearing);
+            const bearing = calcularRumoAdianteNaRota(lat, lon);
+            if (bearing !== null) rotateMapSmooth(bearing);
         }
 
         // ============================
@@ -311,7 +326,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 userMarker = new maplibregl.Marker({ element: el, anchor: "center" })
                     .setLngLat([lon, lat])
                     .addTo(map);
-                userCarIcon = el.querySelector("img");
             } else {
                 userMarker.setLngLat([lon, lat]);
             }
@@ -339,9 +353,14 @@ document.addEventListener("DOMContentLoaded", function () {
         // ROTACAO SUAVE DO MAPA (com adaptação por intensidade)
         // ============================
         function rotateMapSmooth(targetBearing) {
-            ultimoBearingMapa = (targetBearing + 360) % 360;
-            const current = (map.getBearing && typeof map.getBearing === "function") ? map.getBearing() : 0;
-            let diff = Math.abs(((targetBearing - current + 540) % 360) - 180);
+            const bearing = (targetBearing + 360) % 360;
+            if (ultimoBearingSolicitado !== null &&
+                Math.abs(normalizeAngle(bearing - ultimoBearingSolicitado)) < 2) return;
+
+            const current = map.getBearing();
+            const diff = Math.abs(normalizeAngle(bearing - current));
+            if (diff < 2) return;
+            ultimoBearingSolicitado = bearing;
             let duracao;
             let easingFunc;
             if (diff < 15) {
@@ -355,10 +374,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 easingFunc = easeInOutQuad;
             }
             try {
-                map.rotateTo(targetBearing, { duration: duracao, easing: easingFunc });
+                map.rotateTo(bearing, { duration: duracao, easing: easingFunc });
             } catch (e) {
                 // fallback: rotação instantânea
-                map.rotateTo(targetBearing, { duration: 0 });
+                map.rotateTo(bearing, { duration: 0 });
             }
         }
 
@@ -370,14 +389,6 @@ document.addEventListener("DOMContentLoaded", function () {
             let a = ((angle + 180) % 360 + 360) % 360 - 180;
             return a;
         }
-
-        function sincronizarOrientacaoCarro() {
-            if (!userCarIcon || ultimoBearingRota === null) return;
-            userCarIcon.style.transform =
-                `rotate(${normalizeAngle(ultimoBearingRota - map.getBearing())}deg)`;
-        }
-
-        map.on("rotate", sincronizarOrientacaoCarro);
 
         // ============================
         // OVERLAY HTML DE SETAS (pool)
@@ -569,6 +580,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
             if (!isUserInteracting) return;
+            ultimoBearingSolicitado = null;
             isUserInteracting = false;
             if (wasSending && sendIntervalId === null) {
                 enviarPosicao();
@@ -750,19 +762,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // se houver rota, calcula rumo à frente (próximo segmento)
             if (rotaLatLngs.length > 1) {
-                const idx = pontoMaisProximo(lat, lon);
-                const proxIdx = Math.min(idx + 1, rotaLatLngs.length - 1);
-                const prox = rotaLatLngs[proxIdx];
-
-                // rumo da rota (bearing do ponto atual para o próximo)
-                const routeBearing = calcularBearing(lat, lon, prox[0], prox[1]);
-
-                // Compensa a rotação do mapa para manter o carro alinhado à rota na tela.
-                ultimoBearingRota = routeBearing;
-                sincronizarOrientacaoCarro();
-
-                if (ultimoBearingMapa === null ||
-                    Math.abs(normalizeAngle(routeBearing - ultimoBearingMapa)) >= DIFERENCA_MINIMA_ROTACAO) {
+                const routeBearing = calcularRumoAdianteNaRota(lat, lon);
+                if (routeBearing !== null && !isUserInteracting) {
                     rotateMapSmooth(routeBearing);
                 }
 
@@ -824,6 +825,7 @@ document.addEventListener("DOMContentLoaded", function () {
         function pausarNavegacao() {
             if (!navigationActive) return;
             navigationActive = false;
+            ultimoBearingSolicitado = null;
             watchGeneration++;
 
             if (resumeTimeout !== null) {
