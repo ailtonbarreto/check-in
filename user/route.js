@@ -163,15 +163,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // user marker (carro)
         let userMarker = null;
+        let userCarIcon = null;
 
         // ícone carro
         const ICON_URL = "car.png";
         const ICON2_URL = "car_2.png";
         const ICON_SIZE = 96;
 
-
-        let ultimoBearing = 0;
-        let carroAnimFrame = null;
 
         let lastMarkerUpdate = 0;
         const MARKER_MIN_INTERVAL = 80;
@@ -181,9 +179,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let htmlTurnPoints = []; // pool para overlay HTML
         let currentHtmlTurnIndex = null;
         let ultimoBearingMapa = null;
-        let ultimaPosicaoDirecao = null;
-        const VELOCIDADE_MINIMA_RUMO = 1.5;
-        const DISTANCIA_MINIMA_RUMO = 8;
+        let ultimoBearingRota = null;
         const DIFERENCA_MINIMA_ROTACAO = 25;
 
         // controle de interação do usuário (grab/drag)
@@ -281,40 +277,6 @@ document.addEventListener("DOMContentLoaded", function () {
             rotateMapSmooth(bearing);
         }
 
-        function orientarMapaPeloDeslocamento(lat, lon, heading, speed) {
-            if (isUserInteracting) return;
-
-            let bearing = null;
-            if (Number.isFinite(heading) && (speed === null || speed === undefined || speed >= VELOCIDADE_MINIMA_RUMO)) {
-                bearing = heading;
-                ultimaPosicaoDirecao = { lat, lon };
-            } else if (ultimaPosicaoDirecao) {
-                const distancia = distanciaEmMetros(
-                    ultimaPosicaoDirecao.lat,
-                    ultimaPosicaoDirecao.lon,
-                    lat,
-                    lon
-                );
-                if (distancia >= DISTANCIA_MINIMA_RUMO) {
-                    bearing = calcularBearing(
-                        ultimaPosicaoDirecao.lat,
-                        ultimaPosicaoDirecao.lon,
-                        lat,
-                        lon
-                    );
-                    ultimaPosicaoDirecao = { lat, lon };
-                }
-            } else {
-                ultimaPosicaoDirecao = { lat, lon };
-            }
-
-            if (bearing === null) return;
-            if (ultimoBearingMapa !== null &&
-                Math.abs(normalizeAngle(bearing - ultimoBearingMapa)) < DIFERENCA_MINIMA_ROTACAO) return;
-
-            rotateMapSmooth(bearing);
-        }
-
         // ============================
         // CRIAR E ATUALIZAR MARKER DO CARRO (cria apenas uma vez)
         // ============================
@@ -327,15 +289,15 @@ document.addEventListener("DOMContentLoaded", function () {
             el.style.alignItems = "center";
             el.style.justifyContent = "center";
             el.style.pointerEvents = "none";
-            el.style.transformOrigin = "center center";
-            el.style.willChange = "transform";
-            el.style.backfaceVisibility = "hidden";
 
             const img = document.createElement("img");
             img.src = srcUrl;           // define uma vez
             img.style.width = "100%";
             img.style.height = "100%";
             img.style.objectFit = "contain";
+            img.style.transformOrigin = "center center";
+            img.style.willChange = "transform";
+            img.style.backfaceVisibility = "hidden";
             img.alt = "carro";
             img.draggable = false;
 
@@ -349,6 +311,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 userMarker = new maplibregl.Marker({ element: el, anchor: "center" })
                     .setLngLat([lon, lat])
                     .addTo(map);
+                userCarIcon = el.querySelector("img");
             } else {
                 userMarker.setLngLat([lon, lat]);
             }
@@ -371,40 +334,6 @@ document.addEventListener("DOMContentLoaded", function () {
         // ============================
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
         function easeInOutQuad(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
-
-        // ============================
-        // ROTACAO SUAVE DO CARRO (requestAnimationFrame) - cancela animações anteriores
-        // ============================
-        function rotacionarCarroGradualmente(novoBearing, duracao = 1000, easing = easeOutCubic) {
-            if (!userMarker) {
-                ultimoBearing = novoBearing;
-                return;
-            }
-            if (carroAnimFrame) cancelAnimationFrame(carroAnimFrame);
-
-            // normaliza diferença para o menor caminho
-            let diff = novoBearing - ultimoBearing;
-            if (diff > 180) diff -= 360;
-            if (diff < -180) diff += 360;
-
-            const start = performance.now();
-            const inicio = ultimoBearing;
-
-            function step(now) {
-                const elapsed = now - start;
-                const t = Math.min(1, elapsed / duracao);
-                const eased = easing(t);
-                const current = inicio + diff * eased;
-                const el = userMarker.getElement();
-                el.style.transform = `rotate(${current}deg)`;
-                if (t < 1) {
-                    carroAnimFrame = requestAnimationFrame(step);
-                } else {
-                    ultimoBearing = (inicio + diff + 360) % 360;
-                }
-            }
-            carroAnimFrame = requestAnimationFrame(step);
-        }
 
         // ============================
         // ROTACAO SUAVE DO MAPA (com adaptação por intensidade)
@@ -441,6 +370,14 @@ document.addEventListener("DOMContentLoaded", function () {
             let a = ((angle + 180) % 360 + 360) % 360 - 180;
             return a;
         }
+
+        function sincronizarOrientacaoCarro() {
+            if (!userCarIcon || ultimoBearingRota === null) return;
+            userCarIcon.style.transform =
+                `rotate(${normalizeAngle(ultimoBearingRota - map.getBearing())}deg)`;
+        }
+
+        map.on("rotate", sincronizarOrientacaoCarro);
 
         // ============================
         // OVERLAY HTML DE SETAS (pool)
@@ -613,10 +550,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 sendIntervalId = null;
             } else {
                 wasSending = false;
-            }
-            if (carroAnimFrame) {
-                cancelAnimationFrame(carroAnimFrame);
-                carroAnimFrame = null;
             }
             statusDiv.textContent = "Interação do usuário — tarefas pausadas";
         }
@@ -824,11 +757,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 // rumo da rota (bearing do ponto atual para o próximo)
                 const routeBearing = calcularBearing(lat, lon, prox[0], prox[1]);
 
-                // rotaciona sempre o ícone do carro para mostrar direção real
-                rotacionarCarroGradualmente(routeBearing);
+                // Compensa a rotação do mapa para manter o carro alinhado à rota na tela.
+                ultimoBearingRota = routeBearing;
+                sincronizarOrientacaoCarro();
 
-                // Orienta o mapa pelo deslocamento real, não pelos pontos de curva da rota.
-                orientarMapaPeloDeslocamento(lat, lon, pos.coords.heading, pos.coords.speed);
+                if (ultimoBearingMapa === null ||
+                    Math.abs(normalizeAngle(routeBearing - ultimoBearingMapa)) >= DIFERENCA_MINIMA_ROTACAO) {
+                    rotateMapSmooth(routeBearing);
+                }
 
                 // atualiza overlay de setas
                 checarPassagemSetaHTML();
@@ -900,10 +836,6 @@ document.addEventListener("DOMContentLoaded", function () {
             if (watchId !== null) {
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null;
-            }
-            if (carroAnimFrame !== null) {
-                cancelAnimationFrame(carroAnimFrame);
-                carroAnimFrame = null;
             }
             map.stop();
             atualizarEstadoBotoesNavegacao();
@@ -984,7 +916,6 @@ document.addEventListener("DOMContentLoaded", function () {
             watchGeneration++;
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
             pararEnvioPeriodico();
-            if (carroAnimFrame) cancelAnimationFrame(carroAnimFrame);
         });
 
       
