@@ -36,8 +36,10 @@
     </div>
 
     <div class="navigation-controls">
-        <button id="explore-btn" type="button">Explorar</button>
-        <button id="navigate-btn" type="button" disabled>Navegar</button>
+        <button id="navigation-toggle" type="button" role="switch" aria-checked="true" aria-label="Navegação ativa">
+            <span class="navigation-toggle-track" aria-hidden="true"></span>
+            <span id="navigation-toggle-label">Nav</span>
+        </button>
     </div>
 
     <div id="map-container">
@@ -46,7 +48,7 @@
         </div>
     </div>
 
-    <footer class="header">
+    <footer>
         <p id="status">Aguardando localização...</p>
     </footer>
 

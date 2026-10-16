@@ -53,6 +53,8 @@ footer {
     text-align: center;
     width: 100%;
     color: red;
+    position: fixed;
+    bottom: 15vh;
 }
 
 .destino-box {
@@ -141,13 +143,17 @@ footer {
 
 .navigation-controls {
     display: flex;
-    justify-content: center;
-    gap: 0.75rem;
+    justify-content: right;
     width: 90%;
 }
 
 .navigation-controls button {
-    width: 20%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    width: 100%;
+    max-width: 25%;
     background-color: #19AF8C;;
     padding: 0.7rem;
     color: var(--text-color);
@@ -158,14 +164,43 @@ footer {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
 }
 
-.navigation-controls button:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
+.navigation-controls button[aria-checked="false"] {
     background-color: var(--primary-color);
+}
+
+.navigation-toggle-track {
+    position: relative;
+    width: 2.4rem;
+    height: 1.3rem;
+    flex: 0 0 auto;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.45);
+    transition: background-color 0.2s ease;
+}
+
+.navigation-toggle-track::after {
+    content: "";
+    position: absolute;
+    top: 0.15rem;
+    left: 0.15rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s ease;
+}
+
+.navigation-controls button[aria-checked="true"] .navigation-toggle-track {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.navigation-controls button[aria-checked="true"] .navigation-toggle-track::after {
+    transform: translateX(1.1rem);
 }
 
 .btn_container {
     width: 90%;
+    margin: 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -175,7 +210,8 @@ footer {
 #exit-btn {
     width: 20%;
     background-color: var(--primary-color);
-    margin-bottom: 5vw;
+    margin-bottom: 10vw;
+    margin-top: -2vh;
     padding: 0.7rem;
     color: var(--text-color);
     border-radius: 0.4rem;
@@ -236,28 +272,8 @@ footer {
 }
 
 
-#turn-arrow.left .arrow-icon {
-    background: linear-gradient(180deg, #ffecd5, #ffb88c);
-}
-
-#turn-arrow.right .arrow-icon {
-    background: linear-gradient(180deg, #dff0ff, #8fcfff);
-}
-
-#turn-arrow.straight .arrow-icon {
-    background: linear-gradient(180deg, #e8ffd9, #9fe08a);
-}
-
 
 @media (max-width: 768px) {
-    .navigation-controls {
-        gap: 0.5rem;
-    }
-
-    .navigation-controls button {
-        width: 50%;
-    }
-
     #exit-btn {
         width: 100%;
     }

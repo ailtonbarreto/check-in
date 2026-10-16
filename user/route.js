@@ -7,8 +7,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const inputDestino = document.getElementById("destino-input");
     const lista = document.getElementById("autocomplete-list");
     const btnIr = document.getElementById("btn-ir");
-    const btnExplorar = document.getElementById("explore-btn");
-    const btnNavegar = document.getElementById("navigate-btn");
+    const navigationToggle = document.getElementById("navigation-toggle");
+    const navigationToggleLabel = document.getElementById("navigation-toggle-label");
     let selecionarDestino = null;
 
     // ============================
@@ -166,6 +166,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // ícone carro
         const ICON_URL = "car.png";
+        const ICON2_URL = "car_2.png";
         const ICON_SIZE = 96;
 
 
@@ -876,8 +877,12 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         function atualizarEstadoBotoesNavegacao() {
-            btnExplorar.disabled = !navigationActive;
-            btnNavegar.disabled = navigationActive;
+            navigationToggle.setAttribute("aria-checked", String(navigationActive));
+            navigationToggle.setAttribute(
+                "aria-label",
+                navigationActive ? "Desativar navegação" : "Ativar navegação"
+            );
+            navigationToggleLabel.textContent = navigationActive ? "Nav" : "Stop";
         }
 
         function pausarNavegacao() {
@@ -913,8 +918,13 @@ document.addEventListener("DOMContentLoaded", function () {
             iniciarWatch();
         }
 
-        btnExplorar.addEventListener("click", pausarNavegacao);
-        btnNavegar.addEventListener("click", retomarNavegacao);
+        navigationToggle.addEventListener("click", () => {
+            if (navigationActive) {
+                pausarNavegacao();
+            } else {
+                retomarNavegacao();
+            }
+        });
 
         // ============================
         // BOTÃO "IR" (geocodifica e calcula rota)
