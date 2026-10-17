@@ -142,8 +142,11 @@ document.addEventListener("DOMContentLoaded", function () {
             center: [-51.9253, -14.2350],
             zoom: 4,
             pitch: 0,
-            bearing: 0
+            bearing: 0,
+            dragRotate: false,
+            keyboard: false
         });
+        map.touchZoomRotate.disableRotation();
 
         // ============================
         // Estado
@@ -177,7 +180,9 @@ document.addEventListener("DOMContentLoaded", function () {
         let turnPoints = []; // detectados na rota
         let htmlTurnPoints = []; // pool para overlay HTML
         let currentHtmlTurnIndex = null;
+        let ultimoRumoCarro = null;
         let ultimoBearingSolicitado = null;
+        let rotacionAutomaticaActiva = false;
 
         // controle de interação do usuário (grab/drag)
         let isUserInteracting = false;
@@ -262,34 +267,42 @@ document.addEventListener("DOMContentLoaded", function () {
             return melhor;
         }
 
-        function calcularRumoAdianteNaRota(lat, lon) {
-            const idx = pontoMaisProximo(lat, lon);
-            const inicio = rotaLatLngs[idx];
-            if (!inicio || idx >= rotaLatLngs.length - 1) return null;
+        function obterPontoAdianteNaRota(idx) {
+            if (idx >= rotaLatLngs.length - 1) return null;
 
             let distanciaAcumulada = 0;
-            let prox = rotaLatLngs[idx + 1];
+            let proximo = rotaLatLngs[idx + 1];
             for (let i = idx + 1; i < rotaLatLngs.length; i++) {
-                prox = rotaLatLngs[i];
+                proximo = rotaLatLngs[i];
                 distanciaAcumulada += distanciaEmMetros(
                     rotaLatLngs[i - 1][0],
                     rotaLatLngs[i - 1][1],
-                    prox[0],
-                    prox[1]
+                    proximo[0],
+                    proximo[1]
                 );
                 if (distanciaAcumulada >= 20) break;
             }
+            return proximo;
+        }
 
-            return calcularBearing(inicio[0], inicio[1], prox[0], prox[1]);
+        function calcularRumoAdianteNaRota(lat, lon) {
+            const idx = Math.min(pontoMaisProximo(lat, lon), rotaLatLngs.length - 2);
+            const inicio = rotaLatLngs[idx];
+            const proximo = obterPontoAdianteNaRota(idx);
+            if (!inicio || !proximo) return null;
+            return calcularBearing(inicio[0], inicio[1], proximo[0], proximo[1]);
         }
 
         // ============================
-        // ORIENTAR MAPA PELA ROTA (usa rotateMapSmooth)
+        // ORIENTAR MAPA E CARRO PELA ROTA
         // ============================
         function orientarPelaRota(lat, lon) {
             if (rotaLatLngs.length < 2) return;
             const bearing = calcularRumoAdianteNaRota(lat, lon);
-            if (bearing !== null) rotateMapSmooth(bearing);
+            if (bearing !== null) {
+                rotateMapSmooth(bearing);
+                atualizarOrientacaoCarro(bearing);
+            }
         }
 
         // ============================
@@ -329,6 +342,40 @@ document.addEventListener("DOMContentLoaded", function () {
             } else {
                 userMarker.setLngLat([lon, lat]);
             }
+            if (ultimoRumoCarro !== null) {
+                atualizarOrientacaoCarro(ultimoRumoCarro);
+            }
+        }
+
+        function atualizarOrientacaoCarro(bearing) {
+            if (!Number.isFinite(bearing)) return;
+            ultimoRumoCarro = (bearing + 360) % 360;
+            const img = userMarker && userMarker.getElement().querySelector("img");
+            if (img) {
+                const mapBearing = typeof map.getBearing === "function" ? map.getBearing() : 0;
+                const screenBearing = ((ultimoRumoCarro - mapBearing + 540) % 360) - 180;
+                img.style.transform = `rotate(${screenBearing}deg)`;
+            }
+        }
+
+        function rotateMapSmooth(targetBearing) {
+            const bearing = (targetBearing + 360) % 360;
+            if (ultimoBearingSolicitado !== null &&
+                Math.abs(normalizeAngle(bearing - ultimoBearingSolicitado)) < 2) return;
+
+            const diff = Math.abs(normalizeAngle(bearing - map.getBearing()));
+            if (diff < 2) return;
+
+            ultimoBearingSolicitado = bearing;
+            rotacionAutomaticaActiva = true;
+            map.rotateTo(bearing, {
+                duration: diff < 25 ? 350 : 700,
+                easing: t => 1 - Math.pow(1 - t, 3)
+            });
+        }
+
+        function normalizeAngle(angle) {
+            return ((angle + 180) % 360 + 360) % 360 - 180;
         }
 
         // versão throttled para reduzir flicker
@@ -341,52 +388,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             lastMarkerUpdate = now;
             atualizarUserMarker(lat, lon);
-        }
-
-        // ============================
-        // EASING HELPERS
-        // ============================
-        function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-        function easeInOutQuad(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
-
-
-        function rotateMapSmooth(targetBearing) {
-            const bearing = (targetBearing + 360) % 360;
-            if (ultimoBearingSolicitado !== null &&
-                Math.abs(normalizeAngle(bearing - ultimoBearingSolicitado)) < 2) return;
-
-            const current = map.getBearing();
-            const diff = Math.abs(normalizeAngle(bearing - current));
-            if (diff < 2) return;
-            ultimoBearingSolicitado = bearing;
-            let duracao;
-            let easingFunc;
-            // GIRA MAPA DOIDEIRA
-            if (diff < 25) {
-                duracao = 400;
-                easingFunc = t => t;
-            } else if (diff < 60) {
-                duracao = 900;
-                easingFunc = easeOutCubic;
-            } else {
-                duracao = 1200;
-                easingFunc = easeInOutQuad;
-            }
-            try {
-                map.rotateTo(bearing, { duration: duracao, easing: easingFunc });
-            } catch (e) {
-                // fallback: rotação instantânea
-                map.rotateTo(bearing, { duration: 0 });
-            }
-        }
-
-        // ============================
-        // NORMALIZA ÂNGULO (-180..180)
-        // ============================
-        function normalizeAngle(angle) {
-            // retorna ângulo no intervalo -180..180
-            let a = ((angle + 180) % 360 + 360) % 360 - 180;
-            return a;
         }
 
         // ============================
@@ -579,7 +580,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
             if (!isUserInteracting) return;
-            ultimoBearingSolicitado = null;
             isUserInteracting = false;
             if (wasSending && sendIntervalId === null) {
                 enviarPosicao();
@@ -594,23 +594,18 @@ document.addEventListener("DOMContentLoaded", function () {
         // MapLibre interaction events
         map.on("dragstart", () => pauseHeavyWork());
         map.on("dragend", () => resumeHeavyWorkDebounced(300));
-        map.on("movestart", () => pauseHeavyWork());
-        map.on("moveend", () => resumeHeavyWorkDebounced(300));
-
-        // Atualiza seta enquanto o mapa gira (compensa rotação do mapa)
+        map.on("movestart", () => {
+            if (!rotacionAutomaticaActiva) pauseHeavyWork();
+        });
+        map.on("moveend", () => {
+            if (!rotacionAutomaticaActiva) resumeHeavyWorkDebounced(300);
+        });
         map.on("rotate", () => {
-            if (currentHtmlTurnIndex !== null && htmlTurnPoints && htmlTurnPoints[currentHtmlTurnIndex]) {
-                const tp = htmlTurnPoints[currentHtmlTurnIndex];
-                const icon = document.querySelector("#turn-arrow .arrow-icon");
-                if (!icon) return;
-                const mapBearing = (map.getBearing && typeof map.getBearing === "function") ? map.getBearing() : 0;
-                const screenAngle = normalizeAngle(tp.bearing - mapBearing);
-                // icon.style.transform = `rotate(${screenAngle}deg)`;
-            }
+            if (ultimoRumoCarro !== null) atualizarOrientacaoCarro(ultimoRumoCarro);
         });
         map.on("rotateend", () => {
-            // força atualização final
-            mostrarProximaSetaHTML();
+            rotacionAutomaticaActiva = false;
+            if (ultimoRumoCarro !== null) atualizarOrientacaoCarro(ultimoRumoCarro);
         });
 
         // canvas pointer fallback
@@ -762,12 +757,17 @@ document.addEventListener("DOMContentLoaded", function () {
             // se houver rota, calcula rumo à frente (próximo segmento)
             if (rotaLatLngs.length > 1) {
                 const routeBearing = calcularRumoAdianteNaRota(lat, lon);
-                if (routeBearing !== null && !isUserInteracting) {
-                    rotateMapSmooth(routeBearing);
+                if (routeBearing !== null) {
+                    if (!isUserInteracting) rotateMapSmooth(routeBearing);
+                    atualizarOrientacaoCarro(routeBearing);
+                } else if (Number.isFinite(pos.coords.heading)) {
+                    atualizarOrientacaoCarro(pos.coords.heading);
                 }
 
                 // atualiza overlay de setas
                 checarPassagemSetaHTML();
+            } else if (Number.isFinite(pos.coords.heading)) {
+                atualizarOrientacaoCarro(pos.coords.heading);
             }
 
             iniciarEnvioPeriodico();
@@ -824,7 +824,6 @@ document.addEventListener("DOMContentLoaded", function () {
         function pausarNavegacao() {
             if (!navigationActive) return;
             navigationActive = false;
-            ultimoBearingSolicitado = null;
             watchGeneration++;
 
             if (resumeTimeout !== null) {
