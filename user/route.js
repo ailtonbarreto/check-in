@@ -9,6 +9,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const btnIr = document.getElementById("btn-ir");
     const navigationToggle = document.getElementById("navigation-toggle");
     const navigationToggleLabel = document.getElementById("navigation-toggle-label");
+    const routeProgress = document.getElementById("route-progress");
+    const routeProgressFill = document.getElementById("route-progress-fill");
+    const routeProgressLabel = document.getElementById("route-progress-label");
     let selecionarDestino = null;
 
     // ============================
@@ -163,6 +166,14 @@ document.addEventListener("DOMContentLoaded", function () {
         let destinoMarker = null;
         let rotaGeoJSON = null;
         let rotaLatLngs = [];
+        let distanciasAcumuladasRota = [];
+        let comprimentoTotalRota = 0;
+        let destinoDaRota = null;
+        let rotaEmCalculo = false;
+        let atualizacoesForaDaRota = 0;
+        let ultimoRecalculoPorDesvio = 0;
+        const LIMIAR_DESVIO_ROTA_METROS = 50;
+        const TEMPO_ENTRE_RECALCULOS_MS = 15000;
 
         // user marker (carro)
         let userMarker = null;
@@ -176,7 +187,13 @@ document.addEventListener("DOMContentLoaded", function () {
         let lastMarkerUpdate = 0;
         const MARKER_MIN_INTERVAL = 80;
 
-      
+        function obterOffsetDoCarro() {
+            const alturaMapa = map.getCanvas().clientHeight;
+            const margemInferior = window.innerHeight * 0.15;
+            return [0, alturaMapa - margemInferior - alturaMapa / 2];
+        }
+
+
         let turnPoints = []; // detectados na rota
         let htmlTurnPoints = []; // pool para overlay HTML
         let currentHtmlTurnIndex = null;
@@ -248,6 +265,65 @@ document.addEventListener("DOMContentLoaded", function () {
             return R * c;
         }
 
+        function distanciaAteRota(lat, lon) {
+            if (rotaLatLngs.length < 2) return Infinity;
+
+            const R = 6371000;
+            const latRad = lat * Math.PI / 180;
+            let menorDistancia = Infinity;
+
+            for (let i = 1; i < rotaLatLngs.length; i++) {
+                const inicio = rotaLatLngs[i - 1];
+                const fim = rotaLatLngs[i];
+                const inicioX = (inicio[1] - lon) * Math.PI / 180 * R * Math.cos(latRad);
+                const inicioY = (inicio[0] - lat) * Math.PI / 180 * R;
+                const fimX = (fim[1] - lon) * Math.PI / 180 * R * Math.cos(latRad);
+                const fimY = (fim[0] - lat) * Math.PI / 180 * R;
+                const segmentoX = fimX - inicioX;
+                const segmentoY = fimY - inicioY;
+                const comprimentoQuadrado = segmentoX * segmentoX + segmentoY * segmentoY;
+                const proporcao = comprimentoQuadrado === 0
+                    ? 0
+                    : Math.max(0, Math.min(1,
+                        -(inicioX * segmentoX + inicioY * segmentoY) / comprimentoQuadrado
+                    ));
+                const distancia = Math.hypot(
+                    inicioX + proporcao * segmentoX,
+                    inicioY + proporcao * segmentoY
+                );
+                menorDistancia = Math.min(menorDistancia, distancia);
+            }
+
+            return menorDistancia;
+        }
+
+        function verificarNecessidadeDeRota() {
+            if (!navigationActive || isUserInteracting || !destinoFixo ||
+                ultimaLatitude === null || ultimaLongitude === null || rotaEmCalculo) return;
+
+            const destinoMudou = !destinoDaRota ||
+                destinoDaRota.lat !== destinoFixo.lat ||
+                destinoDaRota.lon !== destinoFixo.lon;
+            if (rotaLatLngs.length < 2 || destinoMudou) {
+                calcularRota();
+                return;
+            }
+
+            if (distanciaAteRota(ultimaLatitude, ultimaLongitude) > LIMIAR_DESVIO_ROTA_METROS) {
+                atualizacoesForaDaRota++;
+            } else {
+                atualizacoesForaDaRota = 0;
+            }
+
+            const agora = Date.now();
+            if (atualizacoesForaDaRota >= 2 &&
+                agora - ultimoRecalculoPorDesvio >= TEMPO_ENTRE_RECALCULOS_MS) {
+                atualizacoesForaDaRota = 0;
+                ultimoRecalculoPorDesvio = agora;
+                calcularRota();
+            }
+        }
+
         // ============================
         // PONTO MAIS PRÓXIMO NA ROTA
         // ============================
@@ -265,6 +341,22 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
             return melhor;
+        }
+
+        function atualizarProgressoRota() {
+            if (rotaLatLngs.length < 2 || comprimentoTotalRota <= 0 ||
+                ultimaLatitude === null || ultimaLongitude === null) return;
+
+            const indiceAtual = pontoMaisProximo(ultimaLatitude, ultimaLongitude);
+            const distanciaPercorrida = distanciasAcumuladasRota[indiceAtual] || 0;
+            const progresso = Math.min(100, Math.max(0,
+                Math.round(distanciaPercorrida / comprimentoTotalRota * 100)
+            ));
+
+            routeProgress.hidden = false;
+            routeProgress.setAttribute("aria-valuenow", String(progresso));
+            routeProgressFill.style.width = `${progresso}%`;
+            routeProgressLabel.textContent = `${progresso}%`;
         }
 
         function obterPontoAdianteNaRota(idx) {
@@ -585,9 +677,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 enviarPosicao();
                 sendIntervalId = setInterval(enviarPosicao, 5000);
             }
-            if (ultimaLatitude !== null && ultimaLongitude !== null && destinoFixo) {
-                calcularRota();
-            }
+            verificarNecessidadeDeRota();
             statusDiv.textContent = "Tudo Certo!";
         }
 
@@ -667,8 +757,8 @@ document.addEventListener("DOMContentLoaded", function () {
         // CALCULAR ROTA (OSRM)
         // ============================
         async function calcularRota() {
-            if (!navigationActive) return;
-            if (!ultimaLatitude || !ultimaLongitude) {
+            if (!navigationActive || rotaEmCalculo) return;
+            if (ultimaLatitude === null || ultimaLongitude === null) {
                 statusDiv.textContent = "Aguardando localização...";
                 return;
             }
@@ -677,8 +767,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            const url = `https://router.project-osrm.org/route/v1/driving/${ultimaLongitude},${ultimaLatitude};${destinoFixo.lon},${destinoFixo.lat}?overview=full&geometries=geojson`;
+            const destinoCalculado = { ...destinoFixo };
+            const url = `https://router.project-osrm.org/route/v1/driving/${ultimaLongitude},${ultimaLatitude};${destinoCalculado.lon},${destinoCalculado.lat}?overview=full&geometries=geojson`;
 
+            rotaEmCalculo = true;
             try {
                 statusDiv.textContent = "Calculando rota...";
                 const response = await fetch(url);
@@ -692,6 +784,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 const coords = data.routes[0].geometry.coordinates; // [lon, lat]
                 rotaLatLngs = coords.map(c => [c[1], c[0]]);
+                distanciasAcumuladasRota = [0];
+                for (let i = 1; i < rotaLatLngs.length; i++) {
+                    const anterior = rotaLatLngs[i - 1];
+                    const atual = rotaLatLngs[i];
+                    distanciasAcumuladasRota.push(
+                        distanciasAcumuladasRota[i - 1] +
+                        distanciaEmMetros(anterior[0], anterior[1], atual[0], atual[1])
+                    );
+                }
+                comprimentoTotalRota = distanciasAcumuladasRota[distanciasAcumuladasRota.length - 1] || 0;
+                destinoDaRota = destinoCalculado;
+                atualizacoesForaDaRota = 0;
+                atualizarProgressoRota();
 
                 // detectar pontos de virada e popular overlay HTML
                 detectarPontosDeVirada();
@@ -715,7 +820,12 @@ document.addEventListener("DOMContentLoaded", function () {
                     });
                 }
 
-                map.easeTo({ center: [ultimaLongitude, ultimaLatitude], zoom: 17, duration: 300 });
+                map.easeTo({
+                    center: [ultimaLongitude, ultimaLatitude],
+                    zoom: 17,
+                    offset: obterOffsetDoCarro(),
+                    duration: 300
+                });
 
                 statusDiv.textContent = "Rota calculada";
 
@@ -728,6 +838,8 @@ document.addEventListener("DOMContentLoaded", function () {
             } catch (err) {
                 console.error("Erro ao calcular rota:", err);
                 if (navigationActive) statusDiv.textContent = "Erro ao calcular rota";
+            } finally {
+                rotaEmCalculo = false;
             }
         }
 
@@ -742,16 +854,17 @@ document.addEventListener("DOMContentLoaded", function () {
             ultimaLatitude = lat;
             ultimaLongitude = lon;
             statusDiv.textContent = "Localização atualizada";
+            atualizarProgressoRota();
 
             // atualiza marker (throttled)
             atualizarUserMarkerThrottled(lat, lon);
 
             // primeira vez: centraliza e define zoom
             if (primeiraAtualizacao) {
-                map.jumpTo({ center: [lon, lat], zoom: 17 });
+                map.jumpTo({ center: [lon, lat], zoom: 17, offset: obterOffsetDoCarro() });
                 primeiraAtualizacao = false;
             } else if (!isUserInteracting) {
-                map.panTo([lon, lat], { duration: 300 });
+                map.panTo([lon, lat], { offset: obterOffsetDoCarro(), duration: 300 });
             }
 
             // se houver rota, calcula rumo à frente (próximo segmento)
@@ -770,6 +883,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 atualizarOrientacaoCarro(pos.coords.heading);
             }
 
+            verificarNecessidadeDeRota();
             iniciarEnvioPeriodico();
         }
 
@@ -792,7 +906,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 (pos) => {
                     if (!navigationActive || generation !== watchGeneration) return;
                     atualizarLocalizacao(pos);
-                    if (destinoFixo) calcularRota();
                     if (watchId === null) {
                         watchId = navigator.geolocation.watchPosition(
                             (position) => {

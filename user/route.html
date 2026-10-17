@@ -36,10 +36,17 @@
     </div>
 
     <div class="navigation-controls">
+        <div id="route-progress" class="route-progress" role="progressbar"  aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden>
+            <div class="route-progress-track" aria-hidden="true">
+                <div id="route-progress-fill" class="route-progress-fill"></div>
+            </div>
+            <span id="route-progress-label">0%</span>
+        </div>
         <button id="navigation-toggle" type="button" role="switch" aria-checked="true" aria-label="Navegação ativa">
             <span class="navigation-toggle-track" aria-hidden="true"></span>
             <span id="navigation-toggle-label">Nav</span>
         </button>
+
     </div>
 
     <div id="map-container">
