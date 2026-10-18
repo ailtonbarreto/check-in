@@ -166,6 +166,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let destinoMarker = null;
         let rotaGeoJSON = null;
         let rotaLatLngs = [];
+        let ultimoIndiceRotaAtingido = 0;
         let distanciasAcumuladasRota = [];
         let comprimentoTotalRota = 0;
         let destinoDaRota = null;
@@ -358,30 +359,23 @@ document.addEventListener("DOMContentLoaded", function () {
             routeProgressLabel.textContent = `${progresso}%`;
         }
 
-        function obterPontoAdianteNaRota(idx) {
-            if (idx >= rotaLatLngs.length - 1) return null;
-
-            let distanciaAcumulada = 0;
-            let proximo = rotaLatLngs[idx + 1];
-            for (let i = idx + 1; i < rotaLatLngs.length; i++) {
-                proximo = rotaLatLngs[i];
-                distanciaAcumulada += distanciaEmMetros(
-                    rotaLatLngs[i - 1][0],
-                    rotaLatLngs[i - 1][1],
-                    proximo[0],
-                    proximo[1]
-                );
-                if (distanciaAcumulada >= 20) break;
-            }
-            return proximo;
-        }
-
         function calcularRumoAdianteNaRota(lat, lon) {
-            const idx = Math.min(pontoMaisProximo(lat, lon), rotaLatLngs.length - 2);
-            const inicio = rotaLatLngs[idx];
-            const proximo = obterPontoAdianteNaRota(idx);
-            if (!inicio || !proximo) return null;
-            return calcularBearing(inicio[0], inicio[1], proximo[0], proximo[1]);
+            if (rotaLatLngs.length < 2) return null;
+
+            const indiceAtual = pontoMaisProximo(lat, lon);
+            ultimoIndiceRotaAtingido = Math.max(ultimoIndiceRotaAtingido, indiceAtual);
+
+            let bearing = calcularBearing(
+                rotaLatLngs[0][0],
+                rotaLatLngs[0][1],
+                rotaLatLngs[1][0],
+                rotaLatLngs[1][1]
+            );
+            for (const pontoVirada of turnPoints) {
+                if (pontoVirada.idx > ultimoIndiceRotaAtingido) break;
+                bearing = pontoVirada.bearing;
+            }
+            return bearing;
         }
 
         // ============================
@@ -777,6 +771,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 const coords = data.routes[0].geometry.coordinates; // [lon, lat]
                 rotaLatLngs = coords.map(c => [c[1], c[0]]);
+                ultimoIndiceRotaAtingido = 0;
                 distanciasAcumuladasRota = [0];
                 for (let i = 1; i < rotaLatLngs.length; i++) {
                     const anterior = rotaLatLngs[i - 1];
