@@ -180,8 +180,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // ícone carro
         const ICON_URL = "car.png";
-        const ICON2_URL = "car_2.png";
-        const ICON_SIZE = 96;
+        const ICON2_URL = "arrow.png";
+        const ICON_SIZE = 60;
 
 
         let lastMarkerUpdate = 0;
@@ -426,7 +426,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         function atualizarUserMarker(lat, lon) {
             if (!userMarker) {
-                const el = criarCarMarkerComImagem(ICON_URL, ICON_SIZE);
+                const el = criarCarMarkerComImagem(ICON2_URL, ICON_SIZE);
                 userMarker = new maplibregl.Marker({ element: el, anchor: "center" })
                     .setLngLat([lon, lat])
                     .addTo(map);
