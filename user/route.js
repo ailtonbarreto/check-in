@@ -198,7 +198,6 @@ document.addEventListener("DOMContentLoaded", function () {
         let htmlTurnPoints = []; // pool para overlay HTML
         let currentHtmlTurnIndex = null;
         let ultimoRumoCarro = null;
-        let ultimoBearingSolicitado = null;
         let rotacionAutomaticaActiva = false;
 
         // controle de interação do usuário (grab/drag)
@@ -392,7 +391,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (rotaLatLngs.length < 2) return;
             const bearing = calcularRumoAdianteNaRota(lat, lon);
             if (bearing !== null) {
-                rotateMapSmooth(bearing);
+                atualizarCameraNavegacao(lat, lon, bearing);
                 atualizarOrientacaoCarro(bearing);
             }
         }
@@ -450,24 +449,17 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        function rotateMapSmooth(targetBearing) {
-            const bearing = (targetBearing + 360) % 360;
-            if (ultimoBearingSolicitado !== null &&
-                Math.abs(normalizeAngle(bearing - ultimoBearingSolicitado)) < 2) return;
-
-            const diff = Math.abs(normalizeAngle(bearing - map.getBearing()));
-            if (diff < 2) return;
-
-            ultimoBearingSolicitado = bearing;
+        function atualizarCameraNavegacao(lat, lon, targetBearing) {
+            if (!Number.isFinite(targetBearing) || isUserInteracting) return;
             rotacionAutomaticaActiva = true;
-            map.rotateTo(bearing, {
-                duration: diff < 25 ? 350 : 700,
+            map.easeTo({
+                center: [lon, lat],
+                bearing: (targetBearing + 360) % 360,
+                offset: obterOffsetDoCarro(),
+                duration: 350,
                 easing: t => 1 - Math.pow(1 - t, 3)
             });
-        }
-
-        function normalizeAngle(angle) {
-            return ((angle + 180) % 360 + 360) % 360 - 180;
+            if (!map.isMoving()) rotacionAutomaticaActiva = false;
         }
 
         // versão throttled para reduzir flicker
@@ -689,6 +681,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
         map.on("moveend", () => {
             if (!rotacionAutomaticaActiva) resumeHeavyWorkDebounced(300);
+            rotacionAutomaticaActiva = false;
         });
         map.on("rotate", () => {
             if (ultimoRumoCarro !== null) atualizarOrientacaoCarro(ultimoRumoCarro);
@@ -820,16 +813,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     });
                 }
 
-                map.easeTo({
-                    center: [ultimaLongitude, ultimaLatitude],
-                    zoom: 17,
-                    offset: obterOffsetDoCarro(),
-                    duration: 300
-                });
-
                 statusDiv.textContent = "Rota calculada";
-
-                await new Promise(r => setTimeout(r, 80));
 
                 if (navigationActive && ultimaLatitude !== null && ultimaLongitude !== null) {
                     orientarPelaRota(ultimaLatitude, ultimaLongitude);
@@ -859,24 +843,37 @@ document.addEventListener("DOMContentLoaded", function () {
             // atualiza marker (throttled)
             atualizarUserMarkerThrottled(lat, lon);
 
+            let routeBearing = null;
+            if (rotaLatLngs.length > 1) {
+                routeBearing = calcularRumoAdianteNaRota(lat, lon);
+            }
+
             // primeira vez: centraliza e define zoom
             if (primeiraAtualizacao) {
-                map.jumpTo({ center: [lon, lat], zoom: 17, offset: obterOffsetDoCarro() });
+                map.jumpTo({
+                    center: [lon, lat],
+                    zoom: 17,
+                    bearing: routeBearing === null ? map.getBearing() : routeBearing,
+                    offset: obterOffsetDoCarro()
+                });
                 primeiraAtualizacao = false;
             } else if (!isUserInteracting) {
-                map.panTo([lon, lat], { offset: obterOffsetDoCarro(), duration: 300 });
+                if (routeBearing !== null) {
+                    atualizarCameraNavegacao(lat, lon, routeBearing);
+                } else {
+                    map.panTo([lon, lat], { offset: obterOffsetDoCarro(), duration: 300 });
+                }
             }
 
             // se houver rota, calcula rumo à frente (próximo segmento)
-            if (rotaLatLngs.length > 1) {
-                const routeBearing = calcularRumoAdianteNaRota(lat, lon);
-                if (routeBearing !== null) {
-                    if (!isUserInteracting) rotateMapSmooth(routeBearing);
-                    atualizarOrientacaoCarro(routeBearing);
-                } else if (Number.isFinite(pos.coords.heading)) {
+            if (routeBearing !== null) {
+                atualizarOrientacaoCarro(routeBearing);
+                // atualiza overlay de setas
+                checarPassagemSetaHTML();
+            } else if (rotaLatLngs.length > 1) {
+                if (Number.isFinite(pos.coords.heading)) {
                     atualizarOrientacaoCarro(pos.coords.heading);
                 }
-
                 // atualiza overlay de setas
                 checarPassagemSetaHTML();
             } else if (Number.isFinite(pos.coords.heading)) {
