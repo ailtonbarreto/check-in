@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const btnIr = document.getElementById("btn-ir");
     const navigationToggle = document.getElementById("navigation-toggle");
     const navigationToggleLabel = document.getElementById("navigation-toggle-label");
+    const simulateRouteToggle = document.getElementById("simulate-route-toggle");
     const routeProgress = document.getElementById("route-progress");
     const routeProgressFill = document.getElementById("route-progress-fill");
     const routeProgressLabel = document.getElementById("route-progress-label");
@@ -163,12 +164,18 @@ document.addEventListener("DOMContentLoaded", function () {
         let watchGeneration = 0;
         let sendIntervalId = null;
         let navigationActive = true;
+        let simulacaoAtiva = false;
+        let simulacaoIntervalId = null;
+        let distanciaSimulada = 0;
+        let ultimaAtualizacaoSimulacao = 0;
+        let latitudeAntesDaSimulacao = null;
+        let longitudeAntesDaSimulacao = null;
 
         let destinoFixo = null;
         let destinoMarker = null;
         let rotaGeoJSON = null;
         let rotaLatLngs = [];
-        let ultimoIndiceRotaAtingido = 0;
+        let distanciaMaximaRotaAtingida = 0;
         let distanciasAcumuladasRota = [];
         let comprimentoTotalRota = 0;
         let destinoDaRota = null;
@@ -176,7 +183,8 @@ document.addEventListener("DOMContentLoaded", function () {
         let atualizacoesForaDaRota = 0;
         let ultimoRecalculoPorDesvio = 0;
         const LIMIAR_DESVIO_ROTA_METROS = 50;
-        const TEMPO_ENTRE_RECALCULOS_MS = 15000;
+        const TEMPO_ENTRE_RECALCULOS_MS = 1000;
+        const JANELA_SUAVIZACAO_RUMO_METROS = 8;
         let ultimoRumoBussola = null;
         let bussolaAtiva = false;
 
@@ -253,6 +261,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         selecionarDestino = async (sugestao) => {
+            if (simulacaoAtiva) pararSimulacao();
             destinoFixo = { lat: parseFloat(sugestao.lat), lon: parseFloat(sugestao.lon) };
             if (!navigationActive || isUserInteracting) return;
             await calcularRota();
@@ -389,6 +398,69 @@ document.addEventListener("DOMContentLoaded", function () {
             return melhor;
         }
 
+        function distanciaProjetadaNaRota(lat, lon) {
+            if (rotaLatLngs.length < 2) return 0;
+
+            const R = 6371000;
+            const latitudeRad = lat * Math.PI / 180;
+            let menorDistanciaQuadrada = Infinity;
+            let distanciaRota = 0;
+
+            for (let i = 1; i < rotaLatLngs.length; i++) {
+                const inicio = rotaLatLngs[i - 1];
+                const fim = rotaLatLngs[i];
+                const inicioX = (inicio[1] - lon) * Math.PI / 180 * R * Math.cos(latitudeRad);
+                const inicioY = (inicio[0] - lat) * Math.PI / 180 * R;
+                const fimX = (fim[1] - lon) * Math.PI / 180 * R * Math.cos(latitudeRad);
+                const fimY = (fim[0] - lat) * Math.PI / 180 * R;
+                const segmentoX = fimX - inicioX;
+                const segmentoY = fimY - inicioY;
+                const comprimentoQuadrado = segmentoX * segmentoX + segmentoY * segmentoY;
+                const proporcao = comprimentoQuadrado === 0
+                    ? 0
+                    : Math.max(0, Math.min(1,
+                        -(inicioX * segmentoX + inicioY * segmentoY) / comprimentoQuadrado
+                    ));
+                const distanciaX = inicioX + proporcao * segmentoX;
+                const distanciaY = inicioY + proporcao * segmentoY;
+                const distanciaQuadrada = distanciaX * distanciaX + distanciaY * distanciaY;
+
+                if (distanciaQuadrada < menorDistanciaQuadrada) {
+                    menorDistanciaQuadrada = distanciaQuadrada;
+                    const comprimentoSegmento =
+                        distanciasAcumuladasRota[i] - distanciasAcumuladasRota[i - 1];
+                    distanciaRota = distanciasAcumuladasRota[i - 1] +
+                        proporcao * comprimentoSegmento;
+                }
+            }
+
+            return distanciaRota;
+        }
+
+        function pontoNaRotaPorDistancia(distancia) {
+            const distanciaLimitada = Math.max(0, Math.min(distancia, comprimentoTotalRota));
+            let indice = 1;
+            while (
+                indice < distanciasAcumuladasRota.length - 1 &&
+                distanciasAcumuladasRota[indice] < distanciaLimitada
+            ) {
+                indice++;
+            }
+
+            const distanciaInicio = distanciasAcumuladasRota[indice - 1] || 0;
+            const distanciaFim = distanciasAcumuladasRota[indice] || distanciaInicio;
+            const proporcao = distanciaFim === distanciaInicio
+                ? 0
+                : (distanciaLimitada - distanciaInicio) / (distanciaFim - distanciaInicio);
+            const inicio = rotaLatLngs[indice - 1];
+            const fim = rotaLatLngs[indice];
+
+            return [
+                inicio[0] + (fim[0] - inicio[0]) * proporcao,
+                inicio[1] + (fim[1] - inicio[1]) * proporcao
+            ];
+        }
+
         function atualizarProgressoRota() {
             if (rotaLatLngs.length < 2 || comprimentoTotalRota <= 0 ||
                 ultimaLatitude === null || ultimaLongitude === null) return;
@@ -408,33 +480,28 @@ document.addEventListener("DOMContentLoaded", function () {
         function calcularRumoAdianteNaRota(lat, lon) {
             if (rotaLatLngs.length < 2) return null;
 
-            ultimoIndiceRotaAtingido = Math.max(
-                ultimoIndiceRotaAtingido,
-                pontoMaisProximo(lat, lon)
+            distanciaMaximaRotaAtingida = Math.max(
+                distanciaMaximaRotaAtingida,
+                distanciaProjetadaNaRota(lat, lon)
             );
 
-            let indiceInicial = ultimoIndiceRotaAtingido;
-            let indiceFinal = indiceInicial + 1;
-            const distanciaAlvo = (distanciasAcumuladasRota[indiceInicial] || 0) + 20;
-
-            while (
-                indiceFinal < rotaLatLngs.length - 1 &&
-                distanciasAcumuladasRota[indiceFinal] < distanciaAlvo
-            ) {
-                indiceFinal++;
-            }
-
-            if (indiceFinal >= rotaLatLngs.length) {
-                indiceInicial = rotaLatLngs.length - 2;
-                indiceFinal = rotaLatLngs.length - 1;
-            }
-
-            return calcularBearing(
-                rotaLatLngs[indiceInicial][0],
-                rotaLatLngs[indiceInicial][1],
-                rotaLatLngs[indiceFinal][0],
-                rotaLatLngs[indiceFinal][1]
+            const distanciaFinal = distanciaMaximaRotaAtingida;
+            const distanciaInicial = Math.max(
+                0,
+                distanciaFinal - JANELA_SUAVIZACAO_RUMO_METROS
             );
+            if (distanciaFinal - distanciaInicial < 0.5) {
+                return calcularBearing(
+                    rotaLatLngs[0][0],
+                    rotaLatLngs[0][1],
+                    rotaLatLngs[1][0],
+                    rotaLatLngs[1][1]
+                );
+            }
+
+            const inicio = pontoNaRotaPorDistancia(distanciaInicial);
+            const fim = pontoNaRotaPorDistancia(distanciaFinal);
+            return calcularBearing(inicio[0], inicio[1], fim[0], fim[1]);
         }
 
         // ============================
@@ -509,7 +576,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 center: [lon, lat],
                 bearing: (targetBearing + 360) % 360,
                 offset: obterOffsetDoCarro(),
-                duration: 350,
+                duration: 250,
                 easing: t => 1 - Math.pow(1 - t, 3)
             });
             if (!map.isMoving()) rotacionAutomaticaActiva = false;
@@ -820,6 +887,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const url = `https://router.project-osrm.org/route/v1/driving/${ultimaLongitude},${ultimaLatitude};${destinoCalculado.lon},${destinoCalculado.lat}?overview=full&geometries=geojson`;
 
             rotaEmCalculo = true;
+            simulateRouteToggle.disabled = true;
             try {
                 statusDiv.textContent = "Calculando rota...";
                 const response = await fetch(url);
@@ -833,7 +901,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 const coords = data.routes[0].geometry.coordinates; // [lon, lat]
                 rotaLatLngs = coords.map(c => [c[1], c[0]]);
-                ultimoIndiceRotaAtingido = 0;
+                distanciaMaximaRotaAtingida = 0;
                 distanciasAcumuladasRota = [0];
                 for (let i = 1; i < rotaLatLngs.length; i++) {
                     const anterior = rotaLatLngs[i - 1];
@@ -871,6 +939,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
                 statusDiv.textContent = "Rota calculada";
+                simulateRouteToggle.disabled = !navigationActive || rotaLatLngs.length < 2;
 
                 if (navigationActive && ultimaLatitude !== null && ultimaLongitude !== null) {
                     orientarPelaRota(ultimaLatitude, ultimaLongitude);
@@ -878,9 +947,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
             } catch (err) {
                 console.error("Erro ao calcular rota:", err);
+                simulateRouteToggle.disabled = rotaLatLngs.length < 2;
                 if (navigationActive) statusDiv.textContent = "Erro ao calcular rota";
             } finally {
                 rotaEmCalculo = false;
+                simulateRouteToggle.disabled = !navigationActive || rotaLatLngs.length < 2;
             }
         }
 
@@ -889,12 +960,14 @@ document.addEventListener("DOMContentLoaded", function () {
         // ============================
         // Substitua sua função atualizarLocalizacao por esta
         function atualizarLocalizacao(pos) {
-            if (!navigationActive) return;
+            if (!navigationActive || simulacaoAtiva !== Boolean(pos.simulada)) return;
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
             ultimaLatitude = lat;
             ultimaLongitude = lon;
-            statusDiv.textContent = "Localização atualizada";
+            statusDiv.textContent = pos.simulada
+                ? "Simulação da rota em andamento"
+                : "Localização atualizada";
             atualizarProgressoRota();
 
             // atualiza marker (throttled)
@@ -936,8 +1009,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (rotaLatLngs.length > 1) checarPassagemSetaHTML();
             }
 
-            verificarNecessidadeDeRota();
-            iniciarEnvioPeriodico();
+            if (!pos.simulada) {
+                verificarNecessidadeDeRota();
+                iniciarEnvioPeriodico();
+            }
         }
 
         function tratarErroGeolocalizacao(err) {
@@ -978,6 +1053,111 @@ document.addEventListener("DOMContentLoaded", function () {
             );
         }
 
+        function obterPosicaoNaRota(distancia) {
+            let indice = 1;
+            while (
+                indice < distanciasAcumuladasRota.length - 1 &&
+                distanciasAcumuladasRota[indice] < distancia
+            ) {
+                indice++;
+            }
+
+            const distanciaInicio = distanciasAcumuladasRota[indice - 1] || 0;
+            const distanciaFim = distanciasAcumuladasRota[indice] || distanciaInicio;
+            const proporcao = distanciaFim === distanciaInicio
+                ? 0
+                : (distancia - distanciaInicio) / (distanciaFim - distanciaInicio);
+            const inicio = rotaLatLngs[indice - 1];
+            const fim = rotaLatLngs[indice];
+
+            return {
+                coords: {
+                    latitude: inicio[0] + (fim[0] - inicio[0]) * proporcao,
+                    longitude: inicio[1] + (fim[1] - inicio[1]) * proporcao,
+                    heading: calcularBearing(inicio[0], inicio[1], fim[0], fim[1])
+                },
+                simulada: true
+            };
+        }
+
+        function atualizarSimulacao() {
+            const agora = performance.now();
+            distanciaSimulada += (agora - ultimaAtualizacaoSimulacao) * 30 / 3600;
+            ultimaAtualizacaoSimulacao = agora;
+
+            if (distanciaSimulada >= comprimentoTotalRota) {
+                distanciaSimulada = comprimentoTotalRota;
+                atualizarLocalizacao(obterPosicaoNaRota(distanciaSimulada));
+                pararSimulacao();
+                statusDiv.textContent = "Simulação concluída";
+                return;
+            }
+
+            atualizarLocalizacao(obterPosicaoNaRota(distanciaSimulada));
+        }
+
+        function pararSimulacao(retomarGps = true) {
+            if (!simulacaoAtiva) return;
+            simulacaoAtiva = false;
+            if (simulacaoIntervalId !== null) {
+                clearInterval(simulacaoIntervalId);
+                simulacaoIntervalId = null;
+            }
+            simulateRouteToggle.textContent = "Simular";
+            simulateRouteToggle.setAttribute("aria-pressed", "false");
+            pararEnvioPeriodico();
+
+            if (latitudeAntesDaSimulacao !== null && longitudeAntesDaSimulacao !== null) {
+                ultimaLatitude = latitudeAntesDaSimulacao;
+                ultimaLongitude = longitudeAntesDaSimulacao;
+            }
+            latitudeAntesDaSimulacao = null;
+            longitudeAntesDaSimulacao = null;
+            distanciaMaximaRotaAtingida = ultimaLatitude !== null && ultimaLongitude !== null
+                ? distanciaProjetadaNaRota(ultimaLatitude, ultimaLongitude)
+                : 0;
+
+            if (retomarGps && navigationActive) {
+                watchGeneration++;
+                if (watchId !== null) {
+                    navigator.geolocation.clearWatch(watchId);
+                    watchId = null;
+                }
+                statusDiv.textContent = "Simulação parada — retomando GPS...";
+                iniciarWatch();
+            }
+        }
+
+        function iniciarSimulacao() {
+            if (simulacaoAtiva) {
+                pararSimulacao();
+                return;
+            }
+            if (!navigationActive || rotaEmCalculo || rotaLatLngs.length < 2 ||
+                comprimentoTotalRota <= 0) return;
+
+            latitudeAntesDaSimulacao = ultimaLatitude;
+            longitudeAntesDaSimulacao = ultimaLongitude;
+            simulacaoAtiva = true;
+            distanciaSimulada = 0;
+            distanciaMaximaRotaAtingida = 0;
+            ultimaAtualizacaoSimulacao = performance.now();
+            watchGeneration++;
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            pararEnvioPeriodico();
+            wasSending = false;
+            simulateRouteToggle.textContent = "Parar simulação";
+            simulateRouteToggle.setAttribute("aria-pressed", "true");
+            statusDiv.textContent = "Simulação da rota em andamento";
+            atualizarLocalizacao(obterPosicaoNaRota(0));
+            simulacaoIntervalId = setInterval(atualizarSimulacao, 250);
+        }
+
+        simulateRouteToggle.addEventListener("click", iniciarSimulacao);
+
         function atualizarEstadoBotoesNavegacao() {
             navigationToggle.setAttribute("aria-checked", String(navigationActive));
             navigationToggle.setAttribute(
@@ -985,10 +1165,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 navigationActive ? "Desativar navegação" : "Ativar navegação"
             );
             navigationToggleLabel.textContent = navigationActive ? "Nav" : "Stop";
+            simulateRouteToggle.disabled = !navigationActive || rotaLatLngs.length < 2;
         }
 
         function pausarNavegacao() {
             if (!navigationActive) return;
+            pararSimulacao(false);
             navigationActive = false;
             watchGeneration++;
 
@@ -1028,6 +1210,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // BOTÃO "IR" (geocodifica e calcula rota)
         // ============================
         btnIr.addEventListener("click", async () => {
+            if (simulacaoAtiva) pararSimulacao();
             if (iniciarOrientacaoBussola) await iniciarOrientacaoBussola();
             const texto = inputDestino.value.trim();
             lista.innerHTML = "";
@@ -1081,6 +1264,7 @@ document.addEventListener("DOMContentLoaded", function () {
         window.addEventListener("beforeunload", function () {
             navigationActive = false;
             watchGeneration++;
+            if (simulacaoIntervalId !== null) clearInterval(simulacaoIntervalId);
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
             pararEnvioPeriodico();
         });

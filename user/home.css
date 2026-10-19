@@ -167,6 +167,26 @@ footer {
     background-color: red;
 }
 
+#navigation-toggle {
+    flex: 0 0 20%;
+}
+
+#simulate-route-toggle {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 6.5rem;
+    background-color: #1869ab;
+}
+
+#simulate-route-toggle[aria-pressed="true"] {
+    background-color: #c62828;
+}
+
+#simulate-route-toggle:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 .navigation-toggle-track {
     display: none;
     position: relative;
@@ -202,8 +222,8 @@ footer {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    flex: 0 1 220px;
-    min-width: 80%;
+    flex: 1 1 220px;
+    min-width: 0;
     color: var(--primary-color);
     font-size: 0.85rem;
     font-weight: 700;
