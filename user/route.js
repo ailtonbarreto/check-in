@@ -362,20 +362,33 @@ document.addEventListener("DOMContentLoaded", function () {
         function calcularRumoAdianteNaRota(lat, lon) {
             if (rotaLatLngs.length < 2) return null;
 
-            const indiceAtual = pontoMaisProximo(lat, lon);
-            ultimoIndiceRotaAtingido = Math.max(ultimoIndiceRotaAtingido, indiceAtual);
-
-            let bearing = calcularBearing(
-                rotaLatLngs[0][0],
-                rotaLatLngs[0][1],
-                rotaLatLngs[1][0],
-                rotaLatLngs[1][1]
+            ultimoIndiceRotaAtingido = Math.max(
+                ultimoIndiceRotaAtingido,
+                pontoMaisProximo(lat, lon)
             );
-            for (const pontoVirada of turnPoints) {
-                if (pontoVirada.idx > ultimoIndiceRotaAtingido) break;
-                bearing = pontoVirada.bearing;
+
+            let indiceInicial = ultimoIndiceRotaAtingido;
+            let indiceFinal = indiceInicial + 1;
+            const distanciaAlvo = (distanciasAcumuladasRota[indiceInicial] || 0) + 20;
+
+            while (
+                indiceFinal < rotaLatLngs.length - 1 &&
+                distanciasAcumuladasRota[indiceFinal] < distanciaAlvo
+            ) {
+                indiceFinal++;
             }
-            return bearing;
+
+            if (indiceFinal >= rotaLatLngs.length) {
+                indiceInicial = rotaLatLngs.length - 2;
+                indiceFinal = rotaLatLngs.length - 1;
+            }
+
+            return calcularBearing(
+                rotaLatLngs[indiceInicial][0],
+                rotaLatLngs[indiceInicial][1],
+                rotaLatLngs[indiceFinal][0],
+                rotaLatLngs[indiceFinal][1]
+            );
         }
 
         // ============================
@@ -662,6 +675,9 @@ document.addEventListener("DOMContentLoaded", function () {
             if (wasSending && sendIntervalId === null) {
                 enviarPosicao();
                 sendIntervalId = setInterval(enviarPosicao, 5000);
+            }
+            if (ultimaLatitude !== null && ultimaLongitude !== null && rotaLatLngs.length > 1) {
+                orientarPelaRota(ultimaLatitude, ultimaLongitude);
             }
             verificarNecessidadeDeRota();
             statusDiv.textContent = "Tudo Certo!";

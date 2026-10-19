@@ -214,10 +214,10 @@ footer {
 }
 
 .route-progress-track {
-    height: 0.55rem;
+    height: 1.5rem;
     flex: 1;
     overflow: hidden;
-    border-radius: 1rem;
+    border-radius: 0.5rem;
     background: rgba(24, 105, 171, 0.2);
 }
 
