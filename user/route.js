@@ -168,6 +168,8 @@ document.addEventListener("DOMContentLoaded", function () {
         let simulacaoIntervalId = null;
         let distanciaSimulada = 0;
         let ultimaAtualizacaoSimulacao = 0;
+        const VELOCIDADE_SIMULACAO_KMH = 120;
+        const INTERVALO_SIMULACAO_MS = 10;
         let latitudeAntesDaSimulacao = null;
         let longitudeAntesDaSimulacao = null;
 
@@ -202,7 +204,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         function obterOffsetDoCarro() {
             const alturaMapa = map.getCanvas().clientHeight;
-            const margemInferior = window.innerHeight * 0.15;
+            const margemInferior = window.innerHeight * 0.12;
             return [0, alturaMapa - margemInferior - alturaMapa / 2];
         }
 
@@ -1082,7 +1084,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
         function atualizarSimulacao() {
             const agora = performance.now();
-            distanciaSimulada += (agora - ultimaAtualizacaoSimulacao) * 30 / 3600;
+            distanciaSimulada +=
+                (agora - ultimaAtualizacaoSimulacao) * VELOCIDADE_SIMULACAO_KMH / 3600;
             ultimaAtualizacaoSimulacao = agora;
 
             if (distanciaSimulada >= comprimentoTotalRota) {
@@ -1153,7 +1156,7 @@ document.addEventListener("DOMContentLoaded", function () {
             simulateRouteToggle.setAttribute("aria-pressed", "true");
             statusDiv.textContent = "Simulação da rota em andamento";
             atualizarLocalizacao(obterPosicaoNaRota(0));
-            simulacaoIntervalId = setInterval(atualizarSimulacao, 250);
+            simulacaoIntervalId = setInterval(atualizarSimulacao, INTERVALO_SIMULACAO_MS);
         }
 
         simulateRouteToggle.addEventListener("click", iniciarSimulacao);
