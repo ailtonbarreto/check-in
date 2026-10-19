@@ -172,6 +172,7 @@ footer {
 }
 
 #simulate-route-toggle {
+    display: none;
     flex: 0 0 auto;
     width: auto;
     min-width: 6.5rem;
