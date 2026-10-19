@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const routeProgressFill = document.getElementById("route-progress-fill");
     const routeProgressLabel = document.getElementById("route-progress-label");
     let selecionarDestino = null;
+    let iniciarOrientacaoBussola = null;
 
     // ============================
     // UTIL: debounce
@@ -85,6 +86,7 @@ document.addEventListener("DOMContentLoaded", function () {
             item.addEventListener("click", async () => {
                 inputDestino.value = s.display_name;
                 lista.innerHTML = "";
+                if (iniciarOrientacaoBussola) await iniciarOrientacaoBussola();
                 if (selecionarDestino) await selecionarDestino(s);
             });
             // proteção extra contra duplicatas na UI
@@ -175,6 +177,8 @@ document.addEventListener("DOMContentLoaded", function () {
         let ultimoRecalculoPorDesvio = 0;
         const LIMIAR_DESVIO_ROTA_METROS = 50;
         const TEMPO_ENTRE_RECALCULOS_MS = 15000;
+        let ultimoRumoBussola = null;
+        let bussolaAtiva = false;
 
         // user marker (carro)
         let userMarker = null;
@@ -205,6 +209,48 @@ document.addEventListener("DOMContentLoaded", function () {
         let isUserInteracting = false;
         let resumeTimeout = null;
         let wasSending = false;
+
+        function atualizarOrientacaoBussola(event) {
+            let heading = null;
+            if (Number.isFinite(event.webkitCompassHeading)) {
+                heading = event.webkitCompassHeading;
+            } else if ((event.absolute || event.type === "deviceorientationabsolute") &&
+                Number.isFinite(event.alpha)) {
+                heading = (360 - event.alpha) % 360;
+            }
+            if (!Number.isFinite(heading)) return;
+
+            ultimoRumoBussola = (heading + 360) % 360;
+            if (!navigationActive || isUserInteracting || rotaLatLngs.length > 1 ||
+                ultimaLatitude === null || ultimaLongitude === null) return;
+
+            atualizarCameraNavegacao(ultimaLatitude, ultimaLongitude, ultimoRumoBussola);
+            atualizarOrientacaoCarro(ultimoRumoBussola);
+        }
+
+        iniciarOrientacaoBussola = async () => {
+            if (bussolaAtiva || !window.DeviceOrientationEvent) return;
+
+            const orientationEvent = window.DeviceOrientationEvent;
+            if (typeof orientationEvent.requestPermission === "function") {
+                try {
+                    const permission = await orientationEvent.requestPermission();
+                    if (permission !== "granted") return;
+                } catch (error) {
+                    console.error("Erro ao solicitar acesso à bússola:", error);
+                    return;
+                }
+            }
+
+            window.addEventListener("deviceorientation", atualizarOrientacaoBussola);
+            window.addEventListener("deviceorientationabsolute", atualizarOrientacaoBussola);
+            bussolaAtiva = true;
+        };
+
+        if (window.DeviceOrientationEvent &&
+            typeof window.DeviceOrientationEvent.requestPermission !== "function") {
+            iniciarOrientacaoBussola();
+        }
 
         selecionarDestino = async (sugestao) => {
             destinoFixo = { lat: parseFloat(sugestao.lat), lon: parseFloat(sugestao.lon) };
@@ -858,37 +904,36 @@ document.addEventListener("DOMContentLoaded", function () {
             if (rotaLatLngs.length > 1) {
                 routeBearing = calcularRumoAdianteNaRota(lat, lon);
             }
+            const navigationBearing = routeBearing !== null
+                ? routeBearing
+                : ultimoRumoBussola !== null
+                    ? ultimoRumoBussola
+                    : Number.isFinite(pos.coords.heading)
+                        ? pos.coords.heading
+                        : null;
 
             // primeira vez: centraliza e define zoom
             if (primeiraAtualizacao) {
                 map.jumpTo({
                     center: [lon, lat],
                     zoom: 17,
-                    bearing: routeBearing === null ? map.getBearing() : routeBearing,
+                    bearing: navigationBearing === null ? map.getBearing() : navigationBearing,
                     offset: obterOffsetDoCarro()
                 });
                 primeiraAtualizacao = false;
             } else if (!isUserInteracting) {
-                if (routeBearing !== null) {
-                    atualizarCameraNavegacao(lat, lon, routeBearing);
+                if (navigationBearing !== null) {
+                    atualizarCameraNavegacao(lat, lon, navigationBearing);
                 } else {
                     map.panTo([lon, lat], { offset: obterOffsetDoCarro(), duration: 300 });
                 }
             }
 
             // se houver rota, calcula rumo à frente (próximo segmento)
-            if (routeBearing !== null) {
-                atualizarOrientacaoCarro(routeBearing);
+            if (navigationBearing !== null) {
+                atualizarOrientacaoCarro(navigationBearing);
                 // atualiza overlay de setas
-                checarPassagemSetaHTML();
-            } else if (rotaLatLngs.length > 1) {
-                if (Number.isFinite(pos.coords.heading)) {
-                    atualizarOrientacaoCarro(pos.coords.heading);
-                }
-                // atualiza overlay de setas
-                checarPassagemSetaHTML();
-            } else if (Number.isFinite(pos.coords.heading)) {
-                atualizarOrientacaoCarro(pos.coords.heading);
+                if (rotaLatLngs.length > 1) checarPassagemSetaHTML();
             }
 
             verificarNecessidadeDeRota();
@@ -983,6 +1028,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // BOTÃO "IR" (geocodifica e calcula rota)
         // ============================
         btnIr.addEventListener("click", async () => {
+            if (iniciarOrientacaoBussola) await iniciarOrientacaoBussola();
             const texto = inputDestino.value.trim();
             lista.innerHTML = "";
             if (texto === "") {
