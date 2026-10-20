@@ -177,28 +177,30 @@ document.addEventListener("DOMContentLoaded", function () {
     async function buscarSugestoes(query) {
         if (!query || query.length < 3) return [];
 
-        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=10`;
+        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&bbox=-74,-34,-34,6&limit=50`;
 
         try {
             const resp = await fetch(url);
             const dados = await resp.json();
             if (!dados.features) return [];
 
-            const items = dados.features.map(f => {
-                const display_name = [
-                    f.properties.name,
-                    f.properties.street,
-                    f.properties.city,
-                    f.properties.state,
-                    f.properties.country
-                ].filter(Boolean).join(", ");
-                return {
-                    display_name,
-                    lat: f.geometry.coordinates[1],
-                    lon: f.geometry.coordinates[0],
-                    osm_id: f.properties.osm_id || null
-                };
-            });
+            const items = dados.features
+                .filter(f => f.properties.countrycode?.toUpperCase() === "BR")
+                .map(f => {
+                    const display_name = [
+                        f.properties.name,
+                        f.properties.street,
+                        f.properties.city,
+                        f.properties.state,
+                        f.properties.country
+                    ].filter(Boolean).join(", ");
+                    return {
+                        display_name,
+                        lat: f.geometry.coordinates[1],
+                        lon: f.geometry.coordinates[0],
+                        osm_id: f.properties.osm_id || null
+                    };
+                });
 
             // dedupe por display_name (case-insensitive) e por coordenadas arredondadas
             const seen = new Set();
@@ -1271,7 +1273,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     navigator.geolocation.clearWatch(watchId);
                     watchId = null;
                 }
-                statusDiv.textContent = "Simulação parada — retomando GPS...";
+                statusDiv.textContent = "Retomando GPS...";
                 iniciarWatch();
             }
         }
@@ -1342,7 +1344,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (navigationActive) return;
             navigationActive = true;
             atualizarEstadoBotoesNavegacao();
-            statusDiv.textContent = "Retomando localização...";
+            statusDiv.textContent = "Retornando";
             iniciarWatch();
         }
 
@@ -1384,16 +1386,22 @@ document.addEventListener("DOMContentLoaded", function () {
         // GEOCODIFICAÇÃO (PHOTON) - para botão IR
         // ============================
         async function geocodificarEndereco(endereco) {
-            const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(endereco)}&limit=1`;
+            const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(endereco)}&bbox=-74,-34,-34,6&limit=10`;
+
             try {
                 const resp = await fetch(url);
                 const dados = await resp.json();
-                if (!dados.features || dados.features.length === 0) {
+                const featureBrasil = dados.features?.find(
+                    f => f.properties.countrycode?.toUpperCase() === "BR"
+                );
+                if (!featureBrasil) {
                     alert("Endereço não encontrado.");
                     return null;
                 }
-                const f = dados.features[0];
-                return { lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] };
+                return {
+                    lat: featureBrasil.geometry.coordinates[1],
+                    lon: featureBrasil.geometry.coordinates[0]
+                };
             } catch (err) {
                 console.error("Erro ao geocodificar:", err);
                 alert("Erro ao buscar endereço.");
