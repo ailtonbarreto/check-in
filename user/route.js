@@ -13,8 +13,152 @@ document.addEventListener("DOMContentLoaded", function () {
     const routeProgress = document.getElementById("route-progress");
     const routeProgressFill = document.getElementById("route-progress-fill");
     const routeProgressLabel = document.getElementById("route-progress-label");
+    const rideCard = document.getElementById("ride-card");
+    const ridePrice = document.getElementById("ride-heading");
+    const rideRating = document.getElementById("ride-rating");
+    const ridePickupDistance = document.getElementById("ride-pickup-distance");
+    const rideOrigin = document.getElementById("ride-origin-detail");
+    const rideDuration = document.getElementById("ride-duration");
+    const rideDistance = document.getElementById("ride-distance");
+    const rideDestination = document.getElementById("ride-destination");
+    const rideFeedback = document.getElementById("ride-feedback");
+    const acceptRideButton = document.getElementById("accept-ride");
+    const dismissedMessage = document.getElementById("dismissed-message");
+    const rideApiUrl = "https://api-checkin-7zte.onrender.com/ride";
     let selecionarDestino = null;
     let iniciarOrientacaoBussola = null;
+
+    function obterCampo(source, keys) {
+        for (const key of keys) {
+            if (source && source[key] !== undefined && source[key] !== null && source[key] !== "") {
+                return source[key];
+            }
+        }
+        return null;
+    }
+
+    function textoDoLocal(value) {
+        if (typeof value === "string" || typeof value === "number") return String(value);
+        if (!value || typeof value !== "object") return "";
+        return obterCampo(value, ["address", "endereco", "display_name", "name", "nome", "label"]) || "";
+    }
+
+    function formatarPreco(value) {
+        if (typeof value === "number" || (typeof value === "string" && /^\d+([.,]\d{1,2})?$/.test(value.trim()))) {
+            const numericValue = typeof value === "number" ? value : Number(value.replace(",", "."));
+            return numericValue.toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL"
+            });
+        }
+        return textoDoLocal(value) || "—";
+    }
+
+    function formatarNumero(value, suffix) {
+        if (typeof value === "number") return `${value.toLocaleString("pt-BR")}${suffix}`;
+        if (typeof value === "string" && /^\d+([.,]\d+)?$/.test(value.trim())) {
+            return `${value.trim().replace(".", ",")}${suffix}`;
+        }
+        return textoDoLocal(value) || "—";
+    }
+
+    function formatarAvaliacao(value) {
+        if (typeof value === "number" || (typeof value === "string" && /^\d+([.,]\d+)?$/.test(value.trim()))) {
+            const numericValue = typeof value === "number" ? value : Number(value.replace(",", "."));
+            return numericValue.toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+        return textoDoLocal(value) || "—";
+    }
+
+    function normalizarCorrida(payload) {
+        let data = payload;
+        if (data && !Array.isArray(data) && data.data !== undefined) data = data.data;
+        if (data && !Array.isArray(data) && data.ride !== undefined) data = data.ride;
+        if (Array.isArray(data)) data = data[0];
+        if (!data || typeof data !== "object") {
+            throw new Error("A API não retornou uma oferta de corrida válida.");
+        }
+
+        const originValue = obterCampo(data, [
+            "origin", "origem", "pickup", "embarque", "pickup_address", "endereco_origem"
+        ]);
+        const destinationValue = obterCampo(data, [
+            "destination", "destino", "dropoff", "desembarque", "dropoff_address", "endereco_destino"
+        ]);
+
+        return {
+            price: formatarPreco(obterCampo(data, ["price", "preco", "fare", "valor"])),
+            rating: formatarAvaliacao(obterCampo(data, ["rating", "avaliacao", "nota"])),
+            pickupDistance: formatarNumero(obterCampo(data, [
+                "pickup_distance", "pickupDistance", "distancia_origem", "pickup_eta", "eta"
+            ]), " de distância"),
+            origin: textoDoLocal(originValue) || "Origem não informada",
+            duration: formatarNumero(obterCampo(data, [
+                "duration", "duracao", "trip_duration", "tempo_viagem"
+            ]), " min"),
+            distance: formatarNumero(obterCampo(data, [
+                "distance", "distancia", "trip_distance", "distancia_viagem"
+            ]), " km"),
+            destination: textoDoLocal(destinationValue) || "Destino não informado"
+        };
+    }
+
+    async function carregarOfertaCorrida() {
+        rideCard.setAttribute("aria-busy", "true");
+        try {
+            const response = await fetch(rideApiUrl);
+            if (!response.ok) throw new Error(`Resposta da API não OK: ${response.status}`);
+            const payload = await response.json();
+            const ride = normalizarCorrida(payload);
+
+            ridePrice.textContent = ride.price;
+            rideRating.textContent = ride.rating;
+            ridePickupDistance.textContent = ride.pickupDistance;
+            rideOrigin.textContent = ride.origin;
+            rideDuration.textContent = ride.duration;
+            rideDistance.textContent = ride.distance;
+            rideDestination.textContent = ride.destination;
+            rideFeedback.textContent = "";
+            rideFeedback.classList.remove("is-error");
+            acceptRideButton.disabled = false;
+            acceptRideButton.textContent = "Aceitar";
+        } catch (error) {
+            console.error("Erro ao carregar oferta de corrida:", error);
+            ridePrice.textContent = "Indisponível";
+            rideOrigin.textContent = "Não foi possível carregar os detalhes da corrida.";
+            rideDestination.textContent = "";
+            rideDuration.textContent = "";
+            rideDistance.textContent = "";
+            rideRating.textContent = "—";
+            ridePickupDistance.textContent = "Tente novamente mais tarde";
+            rideFeedback.textContent = "Não foi possível carregar a oferta. Atualize a página para tentar novamente.";
+            rideFeedback.classList.add("is-error");
+            acceptRideButton.disabled = true;
+            acceptRideButton.textContent = "Oferta indisponível";
+        } finally {
+            rideCard.setAttribute("aria-busy", "false");
+        }
+    }
+
+    document.getElementById("dismiss-ride").addEventListener("click", () => {
+        rideCard.hidden = true;
+        dismissedMessage.hidden = false;
+    });
+
+    document.getElementById("show-ride").addEventListener("click", () => {
+        dismissedMessage.hidden = true;
+        rideCard.hidden = false;
+    });
+
+    acceptRideButton.addEventListener("click", () => {
+        acceptRideButton.textContent = "Corrida aceita";
+        acceptRideButton.disabled = true;
+        rideFeedback.classList.remove("is-error");
+        rideFeedback.textContent = "Oferta aceita.";
+    });
 
     // ============================
     // UTIL: debounce
@@ -122,6 +266,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     whenMapLibreReady(initMap);
+    carregarOfertaCorrida();
 
     // ============================
     // INIT MAP + LÓGICA PRINCIPAL
@@ -168,8 +313,8 @@ document.addEventListener("DOMContentLoaded", function () {
         let simulacaoIntervalId = null;
         let distanciaSimulada = 0;
         let ultimaAtualizacaoSimulacao = 0;
-        const VELOCIDADE_SIMULACAO_KMH = 120;
-        const INTERVALO_SIMULACAO_MS = 10;
+        const VELOCIDADE_SIMULACAO_KMH = 400;
+        const INTERVALO_SIMULACAO_MS = 2;
         let latitudeAntesDaSimulacao = null;
         let longitudeAntesDaSimulacao = null;
 
@@ -282,7 +427,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 type: "line",
                 source: "rota",
                 layout: { "line-join": "round", "line-cap": "round" },
-                paint: { "line-color": "#19AF8C", "line-width": 5 }
+                paint: { "line-color": "#056bf0", "line-width": 15 }
             });
         });
 
@@ -768,7 +913,7 @@ document.addEventListener("DOMContentLoaded", function () {
             } else {
                 wasSending = false;
             }
-            statusDiv.textContent = "Interação do usuário — tarefas pausadas";
+            statusDiv.textContent = "Interação do usuário";
         }
 
         function resumeHeavyWorkDebounced(delay = 300) {
@@ -1152,7 +1297,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             pararEnvioPeriodico();
             wasSending = false;
-            simulateRouteToggle.textContent = "Parar simulação";
+            simulateRouteToggle.textContent = "Stop";
             simulateRouteToggle.setAttribute("aria-pressed", "true");
             statusDiv.textContent = "Simulação da rota em andamento";
             atualizarLocalizacao(obterPosicaoNaRota(0));
@@ -1190,7 +1335,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             map.stop();
             atualizarEstadoBotoesNavegacao();
-            statusDiv.textContent = "Modo explorar — navegação pausada";
+            statusDiv.textContent = "Modo explorar";
         }
 
         function retomarNavegacao() {

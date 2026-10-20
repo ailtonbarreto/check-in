@@ -4,13 +4,12 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Rota</title>
+    <title>Oferta de corrida</title>
     <link rel="stylesheet" href="home.css">
     <link rel="shortcut icon" href="./placeholder.png" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
     <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
-    <link id="leaflet-css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
     <script src="route.js"></script>
 </head>
 
@@ -29,10 +28,12 @@
 
 
     <div class="destino-box">
-        <input id="destino-input" type="text" placeholder="Digite o destino:" style="width:70%; padding:8px;">
+        <span class="material-symbols-outlined search-icon" aria-hidden="true">search</span>
+        <input id="destino-input" type="text" placeholder="Para onde vamos?" aria-label="Digite o destino">
         <div id="autocomplete-list" class="autocomplete-items"></div>
-
-        <button id="btn-ir" style="padding:8px;">Ir</button>
+        <button id="btn-ir" type="button" aria-label="Buscar destino">
+            <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+        </button>
     </div>
 
     <div class="navigation-controls">
@@ -44,13 +45,18 @@
         </div>
         <button id="navigation-toggle" type="button" role="switch" aria-checked="true" aria-label="Navegação ativa">
             <span class="navigation-toggle-track" aria-hidden="true"></span>
-            <span id="navigation-toggle-label">Nav</span>
+            <span class="material-symbols-outlined" aria-hidden="true">my_location</span>
+            <span id="navigation-toggle-label">GPS</span>
         </button>
-        <button id="simulate-route-toggle" type="button" aria-pressed="false" disabled>
-            Simular
+        <button id="simulate-route-toggle" type="button" aria-pressed="false" disabled aria-label="Simular rota">
+            <span class="material-symbols-outlined" aria-hidden="true">play_arrow</span>
         </button>
-
     </div>
+
+    <p id="status" role="status" aria-live="polite">Aguardando localização...</p>
+    <button id="exit-btn" type="button" onclick="location.href='index.html'" aria-label="Sair">
+        <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+    </button>
 
     <div id="map-container">
         <div id="map-rotating">
@@ -58,17 +64,63 @@
         </div>
     </div>
 
-    <footer>
-        <p id="status">Aguardando localização...</p>
-    </footer>
+    <section id="ride-card" class="ride-card" aria-labelledby="ride-heading" aria-busy="true">
+        <div class="ride-card-header">
+            <div class="ride-badges">
+                <span class="ride-badge ride-badge-price">
+                    <span class="material-symbols-outlined" aria-hidden="true">person</span>
+                    Seu Preço
+                </span>
+            </div>
+            <button id="dismiss-ride" class="dismiss-ride" type="button" aria-label="Dispensar oferta">
+                <span class="material-symbols-outlined" aria-hidden="true">close</span>
+            </button>
+        </div>
 
-    <div class="btn_container">
+        <h1 id="ride-heading" class="ride-price">Carregando...</h1>
+        <div class="ride-rating">
+            <span class="material-symbols-outlined" aria-hidden="true">star</span>
+            <span id="ride-rating">—</span>
+            <span class="ride-rating-separator" aria-hidden="true"></span>
+            <span class="material-symbols-outlined ride-bolt" aria-hidden="true">bolt</span>
+            <span id="ride-pickup-distance">Buscando corrida</span>
+        </div>
 
-        <button id="exit-btn" onclick="location.href='index.html'">Sair</button>
+        <div class="ride-divider"></div>
+
+        <div class="ride-itinerary">
+            <div class="itinerary-rail" aria-hidden="true">
+                <span class="itinerary-dot"></span>
+                <span class="itinerary-line"></span>
+                <span class="itinerary-square"></span>
+            </div>
+            <div class="itinerary-stops">
+                <div class="itinerary-stop">
+                    <span id="ride-origin-detail" class="stop-detail">Aguardando detalhes da corrida...</span>
+                </div>
+                <div class="itinerary-stop itinerary-destination">
+                    <span class="stop-summary">
+                        <span id="ride-duration" class="stop-duration"></span>
+                        <span id="ride-distance"></span>
+                    </span>
+                    <span id="ride-destination" class="stop-detail"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="ride-divider ride-divider-bottom"></div>
+        <div class="ride-offer">
+            <span class="material-symbols-outlined" aria-hidden="true">trending_up</span>
+            <span id="ride-offer-label">Oferta de valor alto</span>
+        </div>
+        <p id="ride-feedback" class="ride-feedback" role="status" aria-live="polite"></p>
+        <button id="accept-ride" class="accept-ride" type="button" disabled>Aguardando oferta...</button>
+    </section>
+
+    <div id="dismissed-message" class="dismissed-message" hidden>
+        Oferta dispensada
+        <button id="show-ride" type="button">Ver oferta novamente</button>
     </div>
-
-    <script id="leaflet-js" src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-
 
     <script>
         if (sessionStorage.getItem("logon") !== "ok") {
