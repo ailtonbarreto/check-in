@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1869ab">
+    <link rel="shortcut icon" href="../placeholder.png" type="image/x-icon">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined">
+    <link rel="stylesheet" href="home.css">
+    <title>Início | Passageiro</title>
+</head>
+
+<body>
+    <main class="app">
+        <section class="map-section" aria-label="Mapa da região">
+            <div id="map" role="application" aria-label="Mapa interativo"></div>
+
+            <button class="icon-button menu-button" id="menu-button" type="button" aria-label="Abrir menu"
+                aria-expanded="false" aria-controls="menu">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+            <nav class="menu" id="menu" aria-label="Menu principal" hidden>
+                <a href="index.html">Sair da conta</a>
+            </nav>
+
+            <button class="icon-button location-button" id="location-button" type="button"
+                aria-label="Usar minha localização">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 2v3m0 14v3M2 12h3m14 0h3"></path>
+                    <circle cx="12" cy="12" r="6"></circle>
+                    <circle class="location-center" cx="12" cy="12" r="2"></circle>
+                </svg>
+            </button>
+        </section>
+
+        <section class="home-panel" aria-labelledby="greeting">
+            <header class="greeting">
+                <p class="eyebrow">CHECK-IN</p>
+                <h1 id="greeting">Bom dia!</h1>
+                <p>Para onde vamos hoje?</p>
+            </header>
+
+            <form class="destination-search" id="destination-form">
+                <label for="destination">Seu próximo destino</label>
+                <div class="search-field">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="11" cy="11" r="6.5"></circle>
+                        <path d="m16 16 4 4"></path>
+                    </svg>
+                    <input id="destination" name="destination" type="search"
+                        placeholder="Para onde você vai?" autocomplete="off">
+                    <span class="search-divider" aria-hidden="true"></span>
+                    <button class="schedule-button" type="button" id="schedule-button">
+                        <p class="material-symbols-outlined">arrow_forward</p>
+                    </button>
+                </div>
+                <div class="autocomplete-items" id="autocomplete-list" role="listbox"
+                    aria-label="Sugestões de endereço" hidden></div>
+            </form>
+
+            <div class="places" aria-label="Destinos recentes">
+                <button class="place" type="button" data-destination="Trabalho">
+                    <span class="place-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <rect x="4" y="7" width="16" height="13" rx="2"></rect>
+                            <path d="M9 7V5h6v2m-3 0v4"></path>
+                        </svg>
+                    </span>
+                    <span class="place-details">
+                        <span class="place-name">Trabalho</span>
+                        <span class="place-address">Adicione um endereço</span>
+                    </span>
+                    <svg class="place-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="m9 18 6-6-6-6"></path>
+                    </svg>
+                </button>
+
+                <button class="place" type="button" data-destination="Destino recente">
+                    <span class="place-icon recent-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="8"></circle>
+                            <path d="M12 7v5l3 2"></path>
+                        </svg>
+                    </span>
+                    <span class="place-details">
+                        <span class="place-name">Destinos recentes</span>
+                        <span class="place-address">Seus lugares visitados aparecem aqui</span>
+                    </span>
+                    <svg class="place-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="m9 18 6-6-6-6"></path>
+                    </svg>
+                </button>
+            </div>
+
+        </section>
+
+        <p class="toast" id="toast" role="status" aria-live="polite"></p>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

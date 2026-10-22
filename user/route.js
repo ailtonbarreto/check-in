@@ -429,7 +429,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 type: "line",
                 source: "rota",
                 layout: { "line-join": "round", "line-cap": "round" },
-                paint: { "line-color": "#056bf0", "line-width": 15 }
+                paint: { "line-color": "#056bf0", "line-width": 10 }
             });
         });
 
@@ -1083,7 +1083,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         type: "line",
                         source: "rota",
                         layout: { "line-join": "round", "line-cap": "round" },
-                        paint: { "line-color": "#1976d2", "line-width": 5 }
+                        paint: { "line-color": "#1976d2", "line-width": 10 }
                     });
                 }
 

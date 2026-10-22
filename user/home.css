@@ -491,10 +491,10 @@ button {
     color: #454a50;
     font-size: 13px;
 }
-
+/* 
 #simulate-route-toggle {
     display: none;
-}
+} */
 
 .ride-feedback:not(:empty) {
     margin-top: 9px;

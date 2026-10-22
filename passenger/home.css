@@ -1,0 +1,492 @@
+:root {
+    --blue: #1869ab;
+    --green: #19af8c;
+    --ink: #18232d;
+    --muted: #66737e;
+    --line: #e7ebee;
+    --surface: #ffffff;
+    --page: #f2f5f7;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+@font-face {
+    font-family: 'minha-fonte';
+    src: url('../fonts/PlaypenSans-Regular.ttf') format('truetype');
+    font-display: swap;
+}
+
+body {
+    min-width: 320px;
+    min-height: 100vh;
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: 'minha-fonte', sans-serif;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+button {
+    color: inherit;
+}
+
+.app {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 760px;
+    min-height: 100vh;
+    margin: 0 auto;
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: 0 0 50px rgb(24 35 45 / 8%);
+}
+
+.map-section {
+    position: relative;
+    flex: 0 0 48vh;
+    min-height: 300px;
+    background: #dce3e8;
+}
+
+#map {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+}
+
+.leaflet-control-attribution {
+    font: 10px Arial, sans-serif;
+}
+
+.icon-button {
+    position: absolute;
+    z-index: 500;
+    display: grid;
+    width: 52px;
+    height: 52px;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 3px 14px rgb(20 37 53 / 18%);
+    cursor: pointer;
+}
+
+.icon-button svg {
+    width: 25px;
+    height: 25px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2.4;
+}
+
+.menu-button {
+    top: max(28px, env(safe-area-inset-top));
+    left: 22px;
+}
+
+.menu-button[aria-expanded="true"] {
+    color: var(--blue);
+}
+
+.location-button {
+    right: 20px;
+    bottom: 20px;
+    color: var(--blue);
+}
+
+.location-button svg {
+    width: 24px;
+    height: 24px;
+    stroke-width: 1.8;
+}
+
+.location-center {
+    fill: var(--blue);
+}
+
+.menu {
+    position: absolute;
+    top: max(88px, calc(env(safe-area-inset-top) + 60px));
+    left: 22px;
+    z-index: 600;
+    min-width: 170px;
+    padding: 8px;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 5px 24px rgb(20 37 53 / 18%);
+}
+
+.menu[hidden] {
+    display: none;
+}
+
+.menu a {
+    display: block;
+    padding: 12px;
+    border-radius: 8px;
+    color: var(--ink);
+    font-size: 0.9rem;
+    text-decoration: none;
+}
+
+.menu a:hover {
+    background: #f1f6f9;
+}
+
+.home-panel {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 0 30px env(safe-area-inset-bottom);
+    border-radius: 26px 26px 0 0;
+    background: var(--surface);
+}
+
+.greeting {
+    padding: 21px 0 18px;
+    border-bottom: 1px solid var(--line);
+    text-align: center;
+}
+
+.eyebrow {
+    margin: 0;
+    color: var(--blue);
+    font-size: 0.68rem;
+    font-weight: bold;
+    letter-spacing: 0.16em;
+}
+
+.greeting h1 {
+    margin: 4px 0 0;
+    font-size: clamp(1.45rem, 4.8vw, 1.85rem);
+    font-weight: 600;
+}
+
+.greeting > p:last-child {
+    margin: 3px 0 0;
+    color: var(--muted);
+    font-size: 0.88rem;
+}
+
+.destination-search {
+    position: relative;
+    z-index: 5;
+    padding: 19px 0 10px;
+}
+
+.destination-search label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    clip-path: inset(50%);
+}
+
+.search-field {
+    display: flex;
+    min-height: 40px;
+    align-items: center;
+    gap: 13px;
+    border-radius: 0.2rem;
+    padding: 0 13px 0 16px;
+    background: #f0f3f5;
+}
+
+.autocomplete-items {
+    position: absolute;
+    top: calc(100% - 3px);
+    right: 0;
+    left: 0;
+    z-index: 20;
+    max-height: min(240px, 35vh);
+    overflow-y: auto;
+    border-radius: 0 0 12px 12px;
+    background: #ffffff;
+    box-shadow: 0 8px 20px rgb(20 37 53 / 16%);
+}
+
+.autocomplete-items[hidden] {
+    display: none;
+}
+
+.autocomplete-item {
+    display: block;
+    width: 100%;
+    padding: 13px 16px;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: #ffffff;
+    color: var(--ink);
+    cursor: pointer;
+    font-size: 0.86rem;
+    text-align: left;
+}
+
+.autocomplete-item:hover,
+.autocomplete-item:focus-visible {
+    outline: 0;
+    background: #f1f6f9;
+}
+
+.search-field > svg {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 auto;
+    fill: none;
+    stroke: var(--blue);
+    stroke-linecap: round;
+    stroke-width: 2;
+}
+
+.search-field input {
+    width: 100%;
+    min-width: 0;
+    border: none;
+    outline: none;
+    border-radius: 0.2rem;
+    background: transparent;
+    color: var(--ink);
+    font-size: 1.05rem;
+}
+
+.search-field input::placeholder {
+    color: #414b53;
+    opacity: 1;
+}
+
+.search-field input:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 5px;
+}
+
+.search-divider {
+    width: 2px;
+    height: 34px;
+    background: #c9d0d5;
+}
+
+.schedule-button {
+    width: 40px;
+    align-items: center;
+    border: 0;
+    background: transparent;
+    color: var(--blue);
+    cursor: pointer;
+    p{
+        margin: 0;
+    }
+}
+
+
+.places {
+    display: flex;
+    flex-direction: column;
+}
+
+.place {
+    display: flex;
+    min-height: 84px;
+    align-items: center;
+    gap: 14px;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+}
+
+.place:hover {
+    background: #f8fafb;
+}
+
+.place-icon {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--blue);
+    color: #ffffff;
+}
+
+.place-icon svg {
+    width: 21px;
+    height: 21px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+}
+
+.recent-icon {
+    background: #e9f5f2;
+    color: var(--green);
+}
+
+.place-details {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.place-name {
+    overflow: hidden;
+    font-size: 1.05rem;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.place-address {
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 0.83rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.place-chevron {
+    width: 19px;
+    height: 19px;
+    flex: 0 0 auto;
+    fill: none;
+    stroke: #96a1a9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+
+
+.toast {
+    position: fixed;
+    right: 20px;
+    bottom: calc(92px + env(safe-area-inset-bottom));
+    left: 20px;
+    z-index: 1000;
+    width: fit-content;
+    max-width: min(420px, calc(100% - 40px));
+    margin: 0 auto;
+    padding: 12px 16px;
+    border-radius: 10px;
+    background: #18232d;
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+    font-size: 0.88rem;
+    opacity: 0;
+    pointer-events: none;
+    text-align: center;
+    transform: translateY(10px);
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.toast.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+@media (min-width: 761px) {
+    body {
+        padding: 20px 0;
+    }
+
+    .app {
+        min-height: min(920px, calc(100vh - 40px));
+        border-radius: 24px;
+    }
+
+    .map-section {
+        flex-basis: 48%;
+        min-height: 360px;
+    }
+}
+
+@media (max-width: 420px) {
+    .map-section {
+        flex-basis: 45vh;
+        min-height: 260px;
+    }
+
+    .home-panel {
+        padding-right: 20px;
+        padding-left: 20px;
+    }
+
+    .greeting {
+        padding-top: 17px;
+        padding-bottom: 14px;
+    }
+
+    .search-field {
+        height: auto;
+        gap: 10px;
+        padding-right: 9px;
+        padding-left: 13px;
+    }
+
+    .search-field input {
+        font-size: 0.98rem;
+    }
+
+    .place {
+        min-height: 76px;
+        gap: 11px;
+    }
+
+    .place-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .bottom-nav {
+        margin-right: -20px;
+        margin-left: -20px;
+        gap: 8px;
+    }
+
+    .nav-option {
+        min-width: 112px;
+    }
+}
+
+@media (max-height: 720px) and (max-width: 760px) {
+    .map-section {
+        flex-basis: 40vh;
+        min-height: 220px;
+    }
+
+    .greeting {
+        padding-top: 12px;
+        padding-bottom: 10px;
+    }
+
+    .destination-search {
+        padding-top: 12px;
+    }
+
+    .place {
+        min-height: 66px;
+    }
+
+    .bottom-nav {
+        min-height: 66px;
+    }
+}

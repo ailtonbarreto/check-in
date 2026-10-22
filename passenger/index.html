@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="../placeholder.png" type="image/x-icon">
+    <link rel="stylesheet" href="index.css">
+    <title>Login do passageiro</title>
+</head>
+
+<body>
+    <main class="login">
+        <section class="welcome" aria-labelledby="welcome-title">
+            <div class="brand-mark" aria-hidden="true">
+                <span class="brand-pin"></span>
+            </div>
+            <p class="eyebrow">CHECK-IN</p>
+            <h1 id="welcome-title">Sua próxima viagem começa aqui.</h1>
+            <p class="welcome-copy">Entre na sua conta para continuar como passageiro.</p>
+        </section>
+
+        <section class="login-panel" aria-labelledby="login-title">
+            <div class="panel-heading">
+                <p class="eyebrow">ÁREA DO PASSAGEIRO</p>
+                <h2 id="login-title">Bem-vindo!</h2>
+                <p>Informe seus dados para entrar.</p>
+            </div>
+
+            <form class="form" autocomplete="on">
+                <label for="identificador">E-mail ou telefone</label>
+                <input
+                    type="text"
+                    id="identificador"
+                    name="identificador"
+                    placeholder="Digite seu e-mail ou telefone"
+                    autocomplete="username"
+                    required
+                >
+
+                <label for="senha">Senha</label>
+                <input
+                    type="password"
+                    id="senha"
+                    name="senha"
+                    placeholder="Digite sua senha"
+                    autocomplete="current-password"
+                    required
+                >
+
+                <button type="button" id="start-btn" onclick="window.location.href = 'home.html'">Entrar</button>
+            </form>
+        </section>
+    </main>
+</body>
+
+</html>

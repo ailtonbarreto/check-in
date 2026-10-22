@@ -1,0 +1,220 @@
+:root {
+    --bg-color: #ffffff;
+    --color-text: #1869ab;
+    --color-btn: #19af8c;
+    --color-muted: #64748b;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+@font-face {
+    font-family: 'minha-fonte';
+    src: url('../fonts/PlaypenSans-Regular.ttf') format('truetype');
+    font-display: swap;
+}
+
+body {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 32px;
+    background: var(--bg-color);
+    color: var(--color-text);
+    font-family: 'minha-fonte', sans-serif;
+}
+
+.login {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 0.9fr);
+    width: min(100%, 1000px);
+    min-height: 580px;
+    overflow: hidden;
+    border-radius: 28px;
+    box-shadow: 0 20px 60px rgb(24 105 171 / 14%);
+}
+
+.welcome {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: clamp(36px, 7vw, 80px);
+    background: var(--color-text);
+    color: var(--bg-color);
+}
+
+.brand-mark {
+    display: grid;
+    width: 56px;
+    height: 56px;
+    margin-bottom: 32px;
+    place-items: center;
+    border: 2px solid rgb(255 255 255 / 75%);
+    border-radius: 18px;
+}
+
+.brand-pin {
+    width: 18px;
+    height: 18px;
+    border: 5px solid var(--bg-color);
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+}
+
+.eyebrow {
+    font-size: 0.75rem;
+    font-weight: bold;
+    letter-spacing: 0.14em;
+}
+
+.welcome h1 {
+    max-width: 440px;
+    margin-top: 14px;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    line-height: 1.2;
+}
+
+.welcome-copy {
+    max-width: 360px;
+    margin-top: 18px;
+    color: rgb(255 255 255 / 82%);
+    line-height: 1.7;
+}
+
+.login-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(32px, 6vw, 72px);
+    background: #f8fbfd;
+}
+
+.panel-heading h2 {
+    margin-top: 12px;
+    font-size: clamp(2rem, 3vw, 2.6rem);
+}
+
+.panel-heading > p:last-child {
+    margin-top: 8px;
+    color: var(--color-muted);
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 36px;
+}
+
+.form label {
+    margin-top: 8px;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.form input {
+    width: 100%;
+    min-height: 52px;
+    padding: 0 16px;
+    border: 1px solid #d8e2ea;
+    border-radius: 10px;
+    outline: none;
+    background: var(--bg-color);
+    color: #23384a;
+    font: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form input::placeholder {
+    color: #91a0ad;
+}
+
+.form input:focus {
+    border-color: var(--color-text);
+    box-shadow: 0 0 0 3px rgb(24 105 171 / 12%);
+}
+
+#start-btn {
+    min-height: 52px;
+    margin-top: 16px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--color-btn);
+    color: var(--bg-color);
+    cursor: pointer;
+    font: inherit;
+    font-weight: bold;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+#start-btn:hover {
+    background: #159a7b;
+}
+
+#start-btn:active {
+    transform: scale(0.99);
+}
+
+#start-btn:focus-visible {
+    outline: 3px solid var(--color-text);
+    outline-offset: 3px;
+}
+
+@media (max-width: 700px) {
+    body {
+        padding: 16px;
+        background: var(--color-text);
+    }
+
+    .login {
+        grid-template-columns: 1fr;
+        min-height: 0;
+        border-radius: 22px;
+    }
+
+    .welcome {
+        min-height: 230px;
+        padding: 28px;
+    }
+
+    .brand-mark {
+        width: 44px;
+        height: 44px;
+        margin-bottom: 18px;
+        border-radius: 14px;
+    }
+
+    .welcome h1 {
+        max-width: 420px;
+        font-size: clamp(1.7rem, 8vw, 2.3rem);
+    }
+
+    .welcome-copy {
+        margin-top: 10px;
+        font-size: 0.9rem;
+    }
+
+    .login-panel {
+        padding: 30px 28px 36px;
+    }
+
+    .form {
+        margin-top: 26px;
+    }
+}
+
+@media (max-width: 380px) {
+    body {
+        padding: 10px;
+    }
+
+    .welcome,
+    .login-panel {
+        padding-right: 22px;
+        padding-left: 22px;
+    }
+}
