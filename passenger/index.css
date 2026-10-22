@@ -34,7 +34,7 @@ body {
     min-height: 580px;
     overflow: hidden;
     border-radius: 28px;
-    box-shadow: 0 20px 60px rgb(24 105 171 / 14%);
+    box-shadow: 0 20px 60px rgb(24 105 171 / 70%);
 }
 
 .welcome {
@@ -98,10 +98,7 @@ body {
     font-size: clamp(2rem, 3vw, 2.6rem);
 }
 
-.panel-heading > p:last-child {
-    margin-top: 8px;
-    color: var(--color-muted);
-}
+
 
 .form {
     display: flex;
