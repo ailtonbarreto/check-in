@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const inputDestino = document.getElementById("destino-input");
     const lista = document.getElementById("autocomplete-list");
     const btnIr = document.getElementById("btn-ir");
+    const startRouteButton = document.getElementById("start-route");
     const navigationToggle = document.getElementById("navigation-toggle");
     const navigationToggleLabel = document.getElementById("navigation-toggle-label");
     const simulateRouteToggle = document.getElementById("simulate-route-toggle");
@@ -145,7 +146,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.getElementById("dismiss-ride").addEventListener("click", () => {
         rideCard.hidden = true;
-        dismissedMessage.hidden = false;
+        dismissedMessage.hidden = true;
     });
 
     document.getElementById("show-ride").addEventListener("click", () => {
@@ -311,6 +312,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let watchGeneration = 0;
         let sendIntervalId = null;
         let navigationActive = true;
+        let navigationStarted = false;
         let simulacaoAtiva = false;
         let simulacaoIntervalId = null;
         let distanciaSimulada = 0;
@@ -351,7 +353,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         function obterOffsetDoCarro() {
             const alturaMapa = map.getCanvas().clientHeight;
-            const margemInferior = window.innerHeight * 0.12;
+            const margemInferior = window.innerHeight * 0.10;
             return [0, alturaMapa - margemInferior - alturaMapa / 2];
         }
 
@@ -414,7 +416,7 @@ document.addEventListener("DOMContentLoaded", function () {
             destinoFixo = { lat: parseFloat(sugestao.lat), lon: parseFloat(sugestao.lon) };
             if (!navigationActive || isUserInteracting) return;
             await calcularRota();
-            if (ultimaLatitude !== null && ultimaLongitude !== null) {
+            if (navigationStarted && ultimaLatitude !== null && ultimaLongitude !== null) {
                 orientarPelaRota(ultimaLatitude, ultimaLongitude);
             }
         };
@@ -724,6 +726,7 @@ document.addEventListener("DOMContentLoaded", function () {
             map.easeTo({
                 center: [lon, lat],
                 bearing: (targetBearing + 360) % 360,
+                zoom: navigationStarted ? 17 : map.getZoom(),
                 offset: obterOffsetDoCarro(),
                 duration: 250,
                 easing: t => 1 - Math.pow(1 - t, 3)
@@ -938,11 +941,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 enviarPosicao();
                 sendIntervalId = setInterval(enviarPosicao, 5000);
             }
-            if (ultimaLatitude !== null && ultimaLongitude !== null && rotaLatLngs.length > 1) {
+            if (navigationStarted && ultimaLatitude !== null &&
+                ultimaLongitude !== null && rotaLatLngs.length > 1) {
                 orientarPelaRota(ultimaLatitude, ultimaLongitude);
             }
             verificarNecessidadeDeRota();
-            statusDiv.textContent = "Tudo Certo!";
+            if (navigationStarted || rotaLatLngs.length < 2) {
+                statusDiv.textContent = "Tudo Certo!";
+            }
         }
 
         // MapLibre interaction events
@@ -1087,10 +1093,31 @@ document.addEventListener("DOMContentLoaded", function () {
                     });
                 }
 
-                statusDiv.textContent = "Rota calculada";
+                if (!navigationStarted) {
+                    const bounds = new maplibregl.LngLatBounds(coords[0], coords[0]);
+                    coords.forEach(coord => bounds.extend(coord));
+                    rotacionAutomaticaActiva = true;
+                    map.fitBounds(bounds, {
+                        padding: {
+                            top: 150,
+                            right: 48,
+                            bottom: Math.min(360, map.getCanvas().clientHeight * 0.55),
+                            left: 48
+                        },
+                        maxZoom: 16,
+                        duration: 700
+                    });
+                    if (!map.isMoving()) rotacionAutomaticaActiva = false;
+                    startRouteButton.hidden = false;
+                    startRouteButton.disabled = false;
+                    statusDiv.textContent = "Rota pronta. Toque em Ir para iniciar.";
+                } else {
+                    statusDiv.textContent = "Rota calculada";
+                }
                 simulateRouteToggle.disabled = !navigationActive || rotaLatLngs.length < 2;
 
-                if (navigationActive && ultimaLatitude !== null && ultimaLongitude !== null) {
+                if (navigationStarted && navigationActive &&
+                    ultimaLatitude !== null && ultimaLongitude !== null) {
                     orientarPelaRota(ultimaLatitude, ultimaLongitude);
                 }
 
@@ -1143,11 +1170,15 @@ document.addEventListener("DOMContentLoaded", function () {
                     offset: obterOffsetDoCarro()
                 });
                 primeiraAtualizacao = false;
-            } else if (!isUserInteracting) {
+            } else if (!isUserInteracting &&
+                (navigationStarted || rotaLatLngs.length < 2)) {
                 if (navigationBearing !== null) {
                     atualizarCameraNavegacao(lat, lon, navigationBearing);
                 } else {
-                    map.panTo([lon, lat], { offset: obterOffsetDoCarro(), duration: 300 });
+                    map.panTo([lon, lat], {
+                        offset: obterOffsetDoCarro(),
+                        duration: 300
+                    });
                 }
             }
 
@@ -1356,6 +1387,16 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
+        startRouteButton.addEventListener("click", () => {
+            if (rotaLatLngs.length < 2) return;
+            navigationStarted = true;
+            startRouteButton.hidden = true;
+            statusDiv.textContent = "Navegação iniciada";
+            if (ultimaLatitude !== null && ultimaLongitude !== null) {
+                orientarPelaRota(ultimaLatitude, ultimaLongitude);
+            }
+        });
+
         // ============================
         // BOTÃO "IR" (geocodifica e calcula rota)
         // ============================
@@ -1376,7 +1417,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (navigationActive && !isUserInteracting) {
                 await calcularRota();
-                if (ultimaLatitude !== null && ultimaLongitude !== null) {
+                if (navigationStarted && ultimaLatitude !== null && ultimaLongitude !== null) {
                     orientarPelaRota(ultimaLatitude, ultimaLongitude);
                 }
             }

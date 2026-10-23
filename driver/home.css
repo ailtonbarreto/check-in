@@ -165,6 +165,16 @@ button {
     color: red;
 }
 
+#start-route {
+    background-color: var(--green);
+    color: #fff !important;
+    font-weight: 700;
+}
+
+#start-route[hidden] {
+    display: none;
+}
+
 .navigation-toggle-track {
     display: none;
 }
@@ -291,6 +301,8 @@ button {
     border-radius: 20px;
     background: #fff;
     box-shadow: 0 8px 30px rgba(20, 42, 66, 0.26);
+
+    display: none;
 }
 
 .ride-card[hidden] {
