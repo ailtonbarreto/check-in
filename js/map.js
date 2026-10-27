@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function plotarPessoasNoMapa() {
 
-        fetch("https://api-checkin-7zte.onrender.com/localizacoes")
+        fetch("https://api-checkin-s376.onrender.com/localizacoes")
             .then(response => response.json())
             .then(response => {
 
@@ -99,7 +99,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     async function atualizarUsuariosAtivos() {
         try {
-            const response = await fetch("https://api-checkin-7zte.onrender.com/usuarios_ativos");
+            const response = await fetch("https://api-checkin-s376.onrender.com/usuarios_ativos");
 
             const data = await response.json();
 

@@ -170,7 +170,7 @@ async function plotarMotoristasNoMapa() {
     fetchingDrivers = true;
 
     try {
-        const response = await fetch('https://api-checkin-7zte.onrender.com/localizacoes');
+        const response = await fetch('https://api-checkin-s376.onrender.com/localizacoes');
         if (!response.ok) {
             throw new Error(`A API de localizações respondeu com status ${response.status}.`);
         }

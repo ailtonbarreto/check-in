@@ -1,8 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
 
-    // ============================
-    // Elementos DOM
-    // ============================
     const statusDiv = document.getElementById("status");
     const inputDestino = document.getElementById("destino-input");
     const lista = document.getElementById("autocomplete-list");
@@ -25,7 +22,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const rideFeedback = document.getElementById("ride-feedback");
     const acceptRideButton = document.getElementById("accept-ride");
     const dismissedMessage = document.getElementById("dismissed-message");
-    const rideApiUrl = "https://api-checkin-7zte.onrender.com/ride";
+    const rideApiUrl = "https://api-checkin-s376.onrender.com/ride";
     let selecionarDestino = null;
     let iniciarOrientacaoBussola = null;
 
@@ -998,7 +995,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 data: dataHoraBrasil()
             };
             try {
-                const resp = await fetch("https://api-checkin-7zte.onrender.com/input", {
+                const resp = await fetch("https://api-checkin-s376.onrender.com/input", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
