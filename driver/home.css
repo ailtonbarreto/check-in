@@ -302,7 +302,7 @@ button {
     background: #fff;
     box-shadow: 0 8px 30px rgba(20, 42, 66, 0.26);
 
-    display: none;
+    /* display: none; */
 }
 
 .ride-card[hidden] {
