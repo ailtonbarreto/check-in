@@ -72,20 +72,37 @@
                         password: document.getElementById('senha').value
                     })
                 });
-                const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.error || 'Não foi possível entrar.');
+                let data;
+                try {
+                    data = await response.json();
+                } catch {
+                    throw new Error('O servidor retornou uma resposta inválida.');
                 }
-                if (!data.usuario || data.usuario.id === undefined || data.usuario.id === null) {
+
+                if (!response.ok) {
+                    const detail = data.error || data.detail;
+                    const errorMessage = Array.isArray(detail)
+                        ? detail.map((item) => item.msg).filter(Boolean).join(' ')
+                        : detail;
+                    throw new Error(errorMessage || 'Usuário ou senha inválidos.');
+                }
+
+                const passenger = data.usuario || data.user;
+                if (!passenger || passenger.id === undefined || passenger.id === null) {
                     throw new Error('O servidor não retornou o ID do passageiro.');
                 }
 
-                localStorage.setItem('id_passageiro', String(data.usuario.id));
-                localStorage.setItem('nome', data.usuario.user || document.getElementById('identificador').value.trim());
+                localStorage.setItem('id_passageiro', String(passenger.id));
+                localStorage.setItem(
+                    'nome',
+                    passenger.user || passenger.nome || document.getElementById('identificador').value.trim()
+                );
                 window.location.href = 'home.html';
             } catch (error) {
                 console.error('Erro ao entrar como passageiro:', error);
-                loginError.textContent = error.message || 'Não foi possível entrar. Tente novamente.';
+                loginError.textContent = error instanceof TypeError
+                    ? 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.'
+                    : error.message || 'Não foi possível entrar. Tente novamente.';
                 loginError.hidden = false;
             } finally {
                 loginButton.disabled = false;
