@@ -28,63 +28,85 @@
 
         </div>
 
-        <div class="form">
+        <form class="form" id="login-form" autocomplete="on">
 
             <label for="nome">Usuário:</label>
 
-            <input type="text" placeholder="Digite seu Usuário" id="nome">
+            <input type="text" placeholder="Digite seu Usuário" id="nome" name="user" autocomplete="username" required>
 
-            <label for="nome">Senha:</label>
+            <label for="senha">Senha:</label>
 
-            <input type="password" placeholder="*****" id="senha">
+            <input type="password" placeholder="*****" id="senha" name="password" autocomplete="current-password" required>
 
-            <div id="mensagem"></div>
+            <div id="mensagem" role="alert" aria-live="polite"></div>
 
 
-            <button id="start-btn" onclick="login()">Entrar</button>
+            <button id="start-btn" type="submit">Entrar</button>
 
-        </div>
+        </form>
 
     </div>
 
 
     <script>
-        async function login() {
-            const user = document.getElementById('nome').value;
+        const loginForm = document.getElementById('login-form');
+        const loginButton = document.getElementById('start-btn');
+
+        loginForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const user = document.getElementById('nome').value.trim();
             const password = document.getElementById('senha').value;
             const spinner = document.getElementById('spinner');
             const msg = document.getElementById('mensagem');
 
+            msg.textContent = '';
+            loginButton.disabled = true;
             spinner.style.display = 'flex';
 
             try {
                 const apiBaseUrl = 'https://api-checkin-s376.onrender.com';
-                const response = await fetch(`${apiBaseUrl}/login`, {
+                const response = await fetch(`${apiBaseUrl}/login_driver`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ user, password })
                 });
-                const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.error || 'Não foi possível entrar.');
+
+                let data;
+                try {
+                    data = await response.json();
+                } catch {
+                    throw new Error('O servidor retornou uma resposta inválida.');
                 }
-                if (!data.usuario || data.usuario.id === undefined || data.usuario.id === null) {
+
+                if (!response.ok) {
+                    const detail = data.error || data.detail;
+                    const errorMessage = Array.isArray(detail)
+                        ? detail.map((item) => item.msg).filter(Boolean).join(' ')
+                        : detail;
+                    throw new Error(errorMessage || 'Usuário ou senha inválidos.');
+                }
+
+                const driver = data.user || data.usuario;
+                if (!driver || driver.id === undefined || driver.id === null) {
                     throw new Error('O servidor não retornou o ID do motorista.');
                 }
-                localStorage.setItem('id_motorista', String(data.usuario.id));
-                localStorage.setItem('nome', user);
+
+                localStorage.setItem('id_motorista', String(driver.id));
+                localStorage.setItem('nome', driver.user || driver.nome || user);
                 sessionStorage.setItem('logon', 'ok');
                 window.location.href = "route.html";
             } catch (error) {
                 console.error('Erro ao entrar como motorista:', error);
-                msg.textContent = error.message || 'Não foi possível entrar.';
+                msg.textContent = error instanceof TypeError
+                    ? 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.'
+                    : error.message || 'Não foi possível entrar.';
             } finally {
                 spinner.style.display = 'none';
+                loginButton.disabled = false;
             }
-        }
-
+        });
 
     </script>
 

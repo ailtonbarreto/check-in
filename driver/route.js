@@ -97,6 +97,7 @@ document.addEventListener("DOMContentLoaded", function () {
         ]);
 
         return {
+            id: obterCampo(data, ["id_rota"]) ?? obterCampo(payload, ["id_rota"]) ?? obterCampo(data, ["id"]),
             price: formatarPreco(obterCampo(data, ["price", "preco", "fare", "valor"])),
             rating: formatarAvaliacao(obterCampo(data, ["rating", "avaliacao", "nota"])),
             pickupDistance: formatarNumero(obterCampo(data, [
@@ -115,8 +116,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function mostrarOfertaCorrida(payload) {
         const ride = normalizarCorrida(payload);
-        const rideData = payload && payload.ride ? payload.ride : payload;
-        currentRideId = rideData.id_rota ?? rideData.id ?? null;
+        currentRideId = ride.id;
 
         ridePrice.textContent = ride.price;
         rideRating.textContent = ride.rating;
