@@ -11,11 +11,20 @@ const toast = document.getElementById('toast');
 const destinationInput = document.getElementById('destination');
 const suggestionList = document.getElementById('autocomplete-list');
 const greeting = document.getElementById('greeting');
+const apiBaseUrl = 'https://api-checkin-s376.onrender.com';
+const rideApiUrl = `${apiBaseUrl}/oferta_corrida`;
+const rideStatusUrl = rideApiUrl;
 let toastTimeout;
 let locationMarker;
 let destinationMarker;
 let routeLine;
 let currentPosition = null;
+let sendingRide = false;
+let selectedDriverId = null;
+let selectedDriverKey = null;
+let rideStatusInterval = null;
+let initialMapFramed = false;
+let hasFittedUserAndDrivers = false;
 const driverMarkers = new Map();
 const driverIcon = L.icon({
     iconUrl: 'car.png',
@@ -154,7 +163,11 @@ function obterLocalizacao() {
 
 function mostrarLocalizacao(position, zoom = 16) {
     currentPosition = position;
-    map.setView(position, zoom);
+    if (driverMarkers.size > 0 && !hasFittedUserAndDrivers) {
+        enquadrarLocalizacaoEMotoristas();
+    } else if (!initialMapFramed) {
+        map.setView(position, zoom);
+    }
     if (locationMarker) map.removeLayer(locationMarker);
     locationMarker = L.circleMarker(position, {
         radius: 8,
@@ -165,12 +178,30 @@ function mostrarLocalizacao(position, zoom = 16) {
     }).addTo(map);
 }
 
+function enquadrarLocalizacaoEMotoristas() {
+    const positions = [];
+    if (currentPosition) positions.push(currentPosition);
+    driverMarkers.forEach((marker) => {
+        const { lat, lng } = marker.getLatLng();
+        positions.push([lat, lng]);
+    });
+
+    if (positions.length === 0) return;
+    if (positions.length === 1) {
+        map.setView(positions[0], 16);
+    } else {
+        map.fitBounds(positions, { padding: [36, 36], maxZoom: 16 });
+    }
+    initialMapFramed = true;
+    hasFittedUserAndDrivers = Boolean(currentPosition);
+}
+
 async function plotarMotoristasNoMapa() {
     if (fetchingDrivers) return;
     fetchingDrivers = true;
 
     try {
-        const response = await fetch('https://api-checkin-s376.onrender.com/localizacoes');
+        const response = await fetch(`${apiBaseUrl}/localizacoes`);
         if (!response.ok) {
             throw new Error(`A API de localizações respondeu com status ${response.status}.`);
         }
@@ -182,14 +213,15 @@ async function plotarMotoristasNoMapa() {
 
         const driverIds = new Set();
         payload.data.forEach((driver) => {
-            const id = driver.pessoa;
+            const label = driver.pessoa ?? driver.nome ?? 'Motorista';
+            const key = String(driver.pessoa ?? driver.id_motorista ?? driver.motorista_id ?? driver.driver_id ?? driver.id ?? '');
             const latitude = Number(driver.lat);
             const longitude = Number(driver.lon);
-            if (id === undefined || id === null || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+            if (!key || !Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+                Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {
                 return;
             }
 
-            const key = String(id);
             driverIds.add(key);
             const position = [latitude, longitude];
             let marker = driverMarkers.get(key);
@@ -197,11 +229,22 @@ async function plotarMotoristasNoMapa() {
             if (marker) {
                 marker.setLatLng(position);
             } else {
-                const label = document.createElement('strong');
-                label.textContent = String(id);
+                const popup = document.createElement('strong');
+                popup.textContent = String(label);
                 marker = L.marker(position, { icon: driverIcon })
-                    .bindPopup(label)
+                    .bindPopup(popup)
                     .addTo(map);
+                marker.on('click', () => {
+                    const numericDriverId = driver.id_motorista ?? driver.motorista_id ?? driver.driver_id ??
+                        (/^\d+$/.test(String(driver.pessoa)) ? driver.pessoa : null);
+                    if (numericDriverId === null || !Number.isInteger(Number(numericDriverId))) {
+                        showMessage('Localização recebida, mas falta o ID numérico do motorista no backend.');
+                        return;
+                    }
+                    selectedDriverId = String(numericDriverId);
+                    selectedDriverKey = key;
+                    showMessage(`Motorista ${label} selecionado para sua corrida.`);
+                });
                 driverMarkers.set(key, marker);
             }
         });
@@ -210,8 +253,17 @@ async function plotarMotoristasNoMapa() {
             if (!driverIds.has(id)) {
                 map.removeLayer(marker);
                 driverMarkers.delete(id);
+                if (selectedDriverKey === id) {
+                    selectedDriverId = null;
+                    selectedDriverKey = null;
+                    showMessage('O motorista selecionado ficou indisponível. Escolha outro no mapa.');
+                }
             }
         });
+
+        if (driverMarkers.size > 0 && (!initialMapFramed || (currentPosition && !hasFittedUserAndDrivers))) {
+            enquadrarLocalizacaoEMotoristas();
+        }
     } catch (error) {
         console.error('Erro ao buscar localizações dos motoristas:', error);
     } finally {
@@ -229,8 +281,67 @@ async function resolverDestino(query) {
     return destination;
 }
 
+async function enviarSolicitacaoCorrida(ride) {
+    if (sendingRide) {
+        throw new Error('Uma solicitação de corrida já está sendo enviada.');
+    }
+
+    sendingRide = true;
+    try {
+        const response = await fetch(rideApiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(ride)
+        });
+        const result = await response.json();
+        if (!response.ok || !result || result.success !== true || result.id_rota === undefined) {
+            const message = result && typeof result.message === 'string' ? result.message : null;
+            throw new Error(message || `A API de corridas respondeu com status ${response.status}.`);
+        }
+        return result.id_rota;
+    } finally {
+        sendingRide = false;
+    }
+}
+
+function acompanharStatusCorrida(idRota, passengerId) {
+    window.clearInterval(rideStatusInterval);
+    rideStatusInterval = window.setInterval(async () => {
+        try {
+            const query = new URLSearchParams({ id_passageiro: passengerId });
+            const response = await fetch(`${rideStatusUrl}/${encodeURIComponent(idRota)}?${query}`);
+            if (!response.ok) throw new Error(`A API de corridas respondeu com status ${response.status}.`);
+            const result = await response.json();
+            if (result.status === 'aceita') {
+                window.clearInterval(rideStatusInterval);
+                showMessage('O motorista aceitou sua corrida!');
+            } else if (result.status === 'recusada') {
+                window.clearInterval(rideStatusInterval);
+                showMessage('O motorista recusou. Escolha outro motorista no mapa e envie novamente.');
+            } else if (result.status === 'cancelada') {
+                window.clearInterval(rideStatusInterval);
+                showMessage('Esta solicitação de corrida foi cancelada.');
+            }
+        } catch (error) {
+            console.error('Erro ao consultar o status da corrida:', error);
+        }
+    }, 5000);
+}
+
 async function criarRota(destination) {
     clearSuggestions();
+    if (!selectedDriverId) {
+        throw new Error('Selecione um motorista no mapa antes de solicitar a corrida.');
+    }
+
+    const passengerId = localStorage.getItem('id_passageiro');
+    if (!passengerId || !Number.isInteger(Number(passengerId))) {
+        throw new Error('Sua sessão não contém um ID válido de passageiro. Entre novamente.');
+    }
+    if (!selectedDriverId || !Number.isInteger(Number(selectedDriverId))) {
+        throw new Error('O motorista selecionado não tem um ID válido. Escolha outro no mapa.');
+    }
+
     showMessage('Obtendo sua localização...');
 
     const origin = await obterLocalizacao();
@@ -272,7 +383,23 @@ async function criarRota(destination) {
     map.fitBounds(routeLine.getBounds(), { padding: [36, 36] });
     const distance = (route.distance / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
     const duration = Math.round(route.duration / 60);
-    showMessage(`Rota de ${distance} km · cerca de ${duration} min`);
+    showMessage('Enviando solicitação de corrida...');
+
+    const rideId = await enviarSolicitacaoCorrida({
+        id_passageiro: Number(passengerId),
+        id_motorista: Number(selectedDriverId),
+        origem: 'Minha localização',
+        lat: origin[0],
+        lon: origin[1],
+        destino: destination.name,
+        destino_lat: destination.lat,
+        destino_lon: destination.lon,
+        distancia: Number((route.distance / 1000).toFixed(1)),
+        duracao: duration
+    });
+
+    acompanharStatusCorrida(rideId, passengerId);
+    showMessage(`Corrida enviada · ${distance} km · cerca de ${duration} min`);
 }
 
 document.getElementById('menu-button').addEventListener('click', (event) => {
@@ -322,10 +449,6 @@ document.getElementById('destination-form').addEventListener('submit', (event) =
             console.error('Erro ao buscar o endereço ou criar rota:', error);
             showMessage(error.message || 'Não foi possível criar a rota.');
         });
-});
-
-document.getElementById('schedule-button').addEventListener('click', () => {
-    showMessage('O agendamento de viagens estará disponível em breve.');
 });
 
 document.querySelectorAll('.nav-option').forEach((option) => {

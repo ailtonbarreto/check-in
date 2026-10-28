@@ -516,26 +516,46 @@ button {
     color: #b3261e;
 }
 
-.accept-ride {
+.ride-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.accept-ride,
+.decline-ride {
     display: block;
     width: 100%;
     min-height: 56px;
-    margin-top: 12px;
     border: 0;
     border-radius: 10px;
-    background: var(--blue);
-    color: #fff;
     cursor: pointer;
     font-size: 19px;
     font-weight: 600;
     transition: background-color 150ms ease, opacity 150ms ease;
 }
 
+.accept-ride {
+    background: var(--blue);
+    color: #fff;
+}
+
+.decline-ride {
+    background: #f0f1f2;
+    color: #343a40;
+}
+
 .accept-ride:hover:not(:disabled) {
     background: #1e63d3;
 }
 
-.accept-ride:disabled {
+.decline-ride:hover:not(:disabled) {
+    background: #e2e4e6;
+}
+
+.accept-ride:disabled,
+.decline-ride:disabled {
     opacity: 0.62;
     cursor: not-allowed;
 }
@@ -635,7 +655,8 @@ button {
         font-size: 15px;
     }
 
-    .accept-ride {
+    .accept-ride,
+    .decline-ride {
         min-height: 54px;
     }
 
@@ -670,6 +691,9 @@ button {
 
     .accept-ride {
         min-height: 48px;
-        margin-top: 9px;
+    }
+
+    .decline-ride {
+        min-height: 48px;
     }
 }

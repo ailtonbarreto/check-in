@@ -26,7 +26,7 @@
                 <p>Informe seus dados para entrar.</p>
             </div>
 
-            <form class="form" autocomplete="on">
+            <form class="form" id="passenger-login-form" autocomplete="on">
                 <label for="identificador">E-mail ou telefone</label>
                 <input
                     type="text"
@@ -47,10 +47,51 @@
                     required
                 >
 
-                <button type="button" id="start-btn" onclick="window.location.href = 'home.html'">Entrar</button>
+                <p id="login-error" role="alert" hidden></p>
+                <button type="submit" id="start-btn">Entrar</button>
             </form>
         </section>
     </main>
+    <script>
+        const loginForm = document.getElementById('passenger-login-form');
+        const loginError = document.getElementById('login-error');
+        const loginButton = document.getElementById('start-btn');
+
+        loginForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            loginError.hidden = true;
+            loginButton.disabled = true;
+
+            try {
+                const apiBaseUrl = 'https://api-checkin-s376.onrender.com';
+                const response = await fetch(`${apiBaseUrl}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user: document.getElementById('identificador').value.trim(),
+                        password: document.getElementById('senha').value
+                    })
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Não foi possível entrar.');
+                }
+                if (!data.usuario || data.usuario.id === undefined || data.usuario.id === null) {
+                    throw new Error('O servidor não retornou o ID do passageiro.');
+                }
+
+                localStorage.setItem('id_passageiro', String(data.usuario.id));
+                localStorage.setItem('nome', data.usuario.user || document.getElementById('identificador').value.trim());
+                window.location.href = 'home.html';
+            } catch (error) {
+                console.error('Erro ao entrar como passageiro:', error);
+                loginError.textContent = error.message || 'Não foi possível entrar. Tente novamente.';
+                loginError.hidden = false;
+            } finally {
+                loginButton.disabled = false;
+            }
+        });
+    </script>
 </body>
 
 </html>

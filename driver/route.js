@@ -21,8 +21,17 @@ document.addEventListener("DOMContentLoaded", function () {
     const rideDestination = document.getElementById("ride-destination");
     const rideFeedback = document.getElementById("ride-feedback");
     const acceptRideButton = document.getElementById("accept-ride");
+    const declineRideButton = document.getElementById("decline-ride");
     const dismissedMessage = document.getElementById("dismissed-message");
-    const rideApiUrl = "https://api-checkin-s376.onrender.com/ride";
+    const apiBaseUrl = "https://api-checkin-s376.onrender.com";
+    const driverId = localStorage.getItem("id_motorista");
+    const rideSocketUrl = `${apiBaseUrl.replace(/^http/, "ws")}/ws/driver?id_motorista=${encodeURIComponent(driverId || "")}`;
+    let rideSocket = null;
+    let rideReconnectTimeout = null;
+    let rideHeartbeatInterval = null;
+    let currentRideId = null;
+    let shuttingDown = false;
+    let decidingRide = false;
     let selecionarDestino = null;
     let iniciarOrientacaoBussola = null;
 
@@ -104,41 +113,116 @@ document.addEventListener("DOMContentLoaded", function () {
         };
     }
 
-    async function carregarOfertaCorrida() {
-        rideCard.setAttribute("aria-busy", "true");
-        try {
-            const response = await fetch(rideApiUrl);
-            if (!response.ok) throw new Error(`Resposta da API não OK: ${response.status}`);
-            const payload = await response.json();
-            const ride = normalizarCorrida(payload);
+    function mostrarOfertaCorrida(payload) {
+        const ride = normalizarCorrida(payload);
+        const rideData = payload && payload.ride ? payload.ride : payload;
+        currentRideId = rideData.id_rota ?? rideData.id ?? null;
 
-            ridePrice.textContent = ride.price;
-            rideRating.textContent = ride.rating;
-            ridePickupDistance.textContent = ride.pickupDistance;
-            rideOrigin.textContent = ride.origin;
-            rideDuration.textContent = ride.duration;
-            rideDistance.textContent = ride.distance;
-            rideDestination.textContent = ride.destination;
-            rideFeedback.textContent = "";
-            rideFeedback.classList.remove("is-error");
-            acceptRideButton.disabled = false;
-            acceptRideButton.textContent = "Aceitar";
-        } catch (error) {
-            console.error("Erro ao carregar oferta de corrida:", error);
-            ridePrice.textContent = "Indisponível";
-            rideOrigin.textContent = "Não foi possível carregar os detalhes da corrida.";
-            rideDestination.textContent = "";
-            rideDuration.textContent = "";
-            rideDistance.textContent = "";
-            rideRating.textContent = "—";
-            ridePickupDistance.textContent = "Tente novamente mais tarde";
-            rideFeedback.textContent = "Não foi possível carregar a oferta. Atualize a página para tentar novamente.";
+        ridePrice.textContent = ride.price;
+        rideRating.textContent = ride.rating;
+        ridePickupDistance.textContent = ride.pickupDistance;
+        rideOrigin.textContent = ride.origin;
+        rideDuration.textContent = ride.duration;
+        rideDistance.textContent = ride.distance;
+        rideDestination.textContent = ride.destination;
+        rideFeedback.textContent = "";
+        rideFeedback.classList.remove("is-error");
+        rideCard.hidden = false;
+        dismissedMessage.hidden = true;
+        acceptRideButton.disabled = currentRideId === null;
+        declineRideButton.disabled = currentRideId === null;
+        acceptRideButton.textContent = "Aceitar";
+        if (currentRideId === null) {
+            rideFeedback.textContent = "A oferta recebida não contém o ID da rota.";
             rideFeedback.classList.add("is-error");
-            acceptRideButton.disabled = true;
-            acceptRideButton.textContent = "Oferta indisponível";
-        } finally {
-            rideCard.setAttribute("aria-busy", "false");
         }
+    }
+
+    async function decidirCorrida(decisao) {
+        if (decidingRide || currentRideId === null) return;
+        if (!driverId) {
+            rideFeedback.textContent = "ID do motorista ausente. Saia e entre novamente.";
+            rideFeedback.classList.add("is-error");
+            return;
+        }
+
+        decidingRide = true;
+        acceptRideButton.disabled = true;
+        declineRideButton.disabled = true;
+        rideFeedback.classList.remove("is-error");
+        rideFeedback.textContent = decisao === "aceitar" ? "Confirmando corrida..." : "Enviando recusa...";
+        try {
+            const response = await fetch(`${apiBaseUrl}/oferta_corrida/${encodeURIComponent(currentRideId)}/decisao`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id_motorista: Number(driverId), decisao })
+            });
+            const result = await response.json();
+            if (!response.ok || result.success !== true) {
+                throw new Error(result.message || `A API respondeu com status ${response.status}.`);
+            }
+
+            if (decisao === "aceitar") {
+                rideFeedback.textContent = "Corrida aceita. O passageiro foi avisado.";
+                acceptRideButton.textContent = "Corrida aceita";
+            } else {
+                rideFeedback.textContent = "Oferta recusada. O passageiro poderá escolher outro motorista.";
+                rideCard.hidden = true;
+                dismissedMessage.hidden = false;
+            }
+            currentRideId = null;
+        } catch (error) {
+            console.error(`Erro ao ${decisao} corrida:`, error);
+            rideFeedback.textContent = error.message || "Não foi possível registrar sua decisão.";
+            rideFeedback.classList.add("is-error");
+            acceptRideButton.disabled = false;
+            declineRideButton.disabled = false;
+        } finally {
+            decidingRide = false;
+        }
+    }
+
+    function conectarOfertasCorrida() {
+        if (shuttingDown) return;
+        if (!driverId) {
+            rideFeedback.textContent = "Entre novamente para conectar sua conta de motorista.";
+            rideFeedback.classList.add("is-error");
+            return;
+        }
+        if (rideSocket && rideSocket.readyState <= WebSocket.OPEN) return;
+
+        const socket = new WebSocket(rideSocketUrl);
+        rideSocket = socket;
+
+        socket.addEventListener("open", () => {
+            rideHeartbeatInterval = window.setInterval(() => {
+                if (socket.readyState === WebSocket.OPEN) socket.send("ping");
+            }, 25000);
+        });
+
+        socket.addEventListener("message", (event) => {
+            try {
+                const message = JSON.parse(event.data);
+                if (message.event === "new_ride" && message.ride) {
+                    mostrarOfertaCorrida(message.ride);
+                }
+            } catch (error) {
+                console.error("Erro ao processar oferta recebida pelo WebSocket:", error);
+            }
+        });
+
+        socket.addEventListener("error", (error) => {
+            console.error("Erro na conexão de ofertas de corrida:", error);
+            socket.close();
+        });
+
+        socket.addEventListener("close", () => {
+            window.clearInterval(rideHeartbeatInterval);
+            if (rideSocket === socket && !shuttingDown) {
+                rideSocket = null;
+                rideReconnectTimeout = window.setTimeout(conectarOfertasCorrida, 5000);
+            }
+        });
     }
 
     document.getElementById("dismiss-ride").addEventListener("click", () => {
@@ -151,12 +235,8 @@ document.addEventListener("DOMContentLoaded", function () {
         rideCard.hidden = false;
     });
 
-    acceptRideButton.addEventListener("click", () => {
-        acceptRideButton.textContent = "Corrida aceita";
-        acceptRideButton.disabled = true;
-        rideFeedback.classList.remove("is-error");
-        rideFeedback.textContent = "Oferta aceita.";
-    });
+    acceptRideButton.addEventListener("click", () => decidirCorrida("aceitar"));
+    declineRideButton.addEventListener("click", () => decidirCorrida("recusar"));
 
     // ============================
     // UTIL: debounce
@@ -266,7 +346,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     whenMapLibreReady(initMap);
-    carregarOfertaCorrida();
+    conectarOfertasCorrida();
+
+    window.addEventListener("beforeunload", () => {
+        shuttingDown = true;
+        window.clearTimeout(rideReconnectTimeout);
+        window.clearInterval(rideHeartbeatInterval);
+        if (rideSocket) rideSocket.close();
+    });
 
     // ============================
     // INIT MAP + LÓGICA PRINCIPAL
@@ -987,15 +1074,20 @@ document.addEventListener("DOMContentLoaded", function () {
         // ============================
         async function enviarPosicao() {
             if (!navigationActive || ultimaLatitude === null || ultimaLongitude === null) return;
+            const motoristaId = localStorage.getItem("id_motorista");
+            if (!motoristaId) {
+                statusDiv.textContent = "ID do motorista ausente";
+                return;
+            }
             statusDiv.textContent = "Enviando...";
             const payload = {
-                pessoa: localStorage.getItem("nome") || "Desconhecido",
+                pessoa: Number(motoristaId),
                 lat: ultimaLatitude,
                 lon: ultimaLongitude,
                 data: dataHoraBrasil()
             };
             try {
-                const resp = await fetch("https://api-checkin-s376.onrender.com/input", {
+                const resp = await fetch(`${apiBaseUrl}/input`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
