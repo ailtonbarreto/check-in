@@ -255,8 +255,8 @@ window.RideOffers = {
             rideCard.hidden = false;
         });
 
-        acceptRideButton.addEventListener("click", () => decidirCorrida("aceitar"));
-        declineRideButton.addEventListener("click", () => decidirCorrida("recusar"));
+        acceptRideButton.addEventListener("click", () => decidirCorrida("aceitou"));
+        declineRideButton.addEventListener("click", () => decidirCorrida("recusou"));
 
         conectarOfertasCorrida();
 
