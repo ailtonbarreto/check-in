@@ -1,5 +1,5 @@
 window.RideOffers = {
-    initialize(apiBaseUrl) {
+    initialize(apiBaseUrl, onRideAccepted) {
         const rideCard = document.getElementById("ride-card");
         const ridePrice = document.getElementById("ride-heading");
         const rideRating = document.getElementById("ride-rating");
@@ -18,6 +18,7 @@ window.RideOffers = {
         let rideReconnectTimeout = null;
         let rideHeartbeatInterval = null;
         let currentRideId = null;
+        let currentRide = null;
         let shuttingDown = false;
         let decidingRide = false;
 
@@ -66,6 +67,12 @@ window.RideOffers = {
             return textoDoLocal(value) || "—";
         }
 
+        function normalizarCoordenada(value, limite) {
+            if (value === null || value === undefined || value === "") return null;
+            const coordinate = Number(value);
+            return Number.isFinite(coordinate) && Math.abs(coordinate) <= limite ? coordinate : null;
+        }
+
         function normalizarCorrida(payload) {
             let data = payload;
             if (data && !Array.isArray(data) && data.data !== undefined) data = data.data;
@@ -81,6 +88,13 @@ window.RideOffers = {
             const destinationValue = obterCampo(data, [
                 "destination", "destino", "dropoff", "desembarque", "dropoff_address", "endereco_destino"
             ]);
+            const originData = originValue && typeof originValue === "object" ? originValue : data;
+            const pickupLatitude = normalizarCoordenada(obterCampo(data, [
+                "lat_origem", "origem_lat", "latitude_origem", "pickup_lat", "pickup_latitude", "lat", "latitude"
+            ]) ?? obterCampo(originData, ["lat", "latitude"]), 90);
+            const pickupLongitude = normalizarCoordenada(obterCampo(data, [
+                "lon_origem", "origem_lon", "longitude_origem", "pickup_lon", "pickup_longitude", "lon", "lng", "longitude"
+            ]) ?? obterCampo(originData, ["lon", "lng", "longitude"]), 180);
 
             return {
                 id: obterCampo(data, ["id_rota"]) ?? obterCampo(payload, ["id_rota"]) ?? obterCampo(data, ["id"]),
@@ -96,12 +110,15 @@ window.RideOffers = {
                 distance: formatarNumero(obterCampo(data, [
                     "distance", "distancia", "trip_distance", "distancia_viagem"
                 ]), " km"),
-                destination: textoDoLocal(destinationValue) || "Destino não informado"
+                destination: textoDoLocal(destinationValue) || "Destino não informado",
+                pickupLatitude,
+                pickupLongitude
             };
         }
 
         function mostrarOfertaCorrida(payload) {
             const ride = normalizarCorrida(payload);
+            currentRide = ride;
             currentRideId = ride.id;
 
             ridePrice.textContent = ride.price;
@@ -132,6 +149,14 @@ window.RideOffers = {
                 return;
             }
 
+            const acceptedRide = currentRide;
+            if (decisao === "aceitar" &&
+                (!acceptedRide || acceptedRide.pickupLatitude === null || acceptedRide.pickupLongitude === null)) {
+                rideFeedback.textContent = "A oferta não contém as coordenadas do passageiro. Não é possível traçar a rota.";
+                rideFeedback.classList.add("is-error");
+                return;
+            }
+
             decidingRide = true;
             acceptRideButton.disabled = true;
             declineRideButton.disabled = true;
@@ -151,12 +176,20 @@ window.RideOffers = {
                 if (decisao === "aceitar") {
                     rideFeedback.textContent = "Corrida aceita. O passageiro foi avisado.";
                     acceptRideButton.textContent = "Corrida aceita";
+                    currentRideId = null;
+                    try {
+                        await onRideAccepted(acceptedRide);
+                    } catch (error) {
+                        console.error("Erro ao iniciar a rota até o passageiro:", error);
+                        rideFeedback.textContent = `Corrida aceita, mas não foi possível iniciar a rota: ${error.message}`;
+                        rideFeedback.classList.add("is-error");
+                    }
                 } else {
                     rideFeedback.textContent = "Oferta recusada. O passageiro poderá escolher outro motorista.";
                     rideCard.hidden = true;
                     dismissedMessage.hidden = false;
+                    currentRideId = null;
                 }
-                currentRideId = null;
             } catch (error) {
                 console.error(`Erro ao ${decisao} corrida:`, error);
                 rideFeedback.textContent = error.message || "Não foi possível registrar sua decisão.";

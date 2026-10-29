@@ -14,6 +14,16 @@ document.addEventListener("DOMContentLoaded", function () {
     const apiBaseUrl = "https://api-checkin-s376.onrender.com";
     let selecionarDestino = null;
     let iniciarOrientacaoBussola = null;
+    let iniciarRotaParaPassageiro = null;
+    let corridaAguardandoRota = null;
+
+    function iniciarRotaAtePassageiro(ride) {
+        if (!iniciarRotaParaPassageiro) {
+            corridaAguardandoRota = ride;
+            return;
+        }
+        return iniciarRotaParaPassageiro(ride);
+    }
 
     // ============================
     // UTIL: debounce
@@ -123,7 +133,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     whenMapLibreReady(initMap);
-    window.RideOffers.initialize(apiBaseUrl);
+    window.RideOffers.initialize(apiBaseUrl, iniciarRotaAtePassageiro);
 
     // ============================
     // INIT MAP + LÓGICA PRINCIPAL
@@ -1090,6 +1100,51 @@ document.addEventListener("DOMContentLoaded", function () {
                 },
                 { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
             );
+        }
+
+        iniciarRotaParaPassageiro = async (ride) => {
+            if (simulacaoAtiva) pararSimulacao();
+
+            destinoFixo = {
+                lat: ride.pickupLatitude,
+                lon: ride.pickupLongitude
+            };
+            destinoDaRota = null;
+            inputDestino.value = ride.origin;
+            navigationActive = true;
+            navigationStarted = true;
+            startRouteButton.hidden = true;
+            atualizarEstadoBotoesNavegacao();
+            iniciarWatch();
+
+            if (!map.isStyleLoaded()) {
+                await new Promise((resolve) => map.once("load", resolve));
+            }
+            if (destinoMarker) destinoMarker.remove();
+            destinoMarker = new maplibregl.Marker()
+                .setLngLat([ride.pickupLongitude, ride.pickupLatitude])
+                .addTo(map);
+
+            if (ultimaLatitude === null || ultimaLongitude === null) {
+                statusDiv.textContent = "Corrida aceita. Aguardando sua localização para traçar a rota ao passageiro...";
+                return;
+            }
+
+            await calcularRota();
+            if (destinoDaRota &&
+                destinoDaRota.lat === ride.pickupLatitude &&
+                destinoDaRota.lon === ride.pickupLongitude) {
+                statusDiv.textContent = "A caminho do passageiro";
+            }
+        };
+
+        if (corridaAguardandoRota) {
+            const ride = corridaAguardandoRota;
+            corridaAguardandoRota = null;
+            iniciarRotaParaPassageiro(ride).catch((error) => {
+                console.error("Erro ao iniciar a rota até o passageiro:", error);
+                statusDiv.textContent = "Corrida aceita, mas não foi possível iniciar a rota.";
+            });
         }
 
         function obterPosicaoNaRota(distancia) {
