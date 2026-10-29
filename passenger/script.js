@@ -31,6 +31,7 @@ let suggestionTimeout;
 let suggestionController;
 let activeSuggestionRequest = 0;
 let fetchingDrivers = false;
+const DRIVER_LOCATION_MAX_AGE_MS = 30_000;
 
 function atualizarSaudacao() {
     const hora = new Date().getHours();
@@ -213,8 +214,10 @@ async function plotarMotoristasNoMapa() {
             const key = String(driver.pessoa ?? driver.id_motorista ?? driver.motorista_id ?? driver.driver_id ?? driver.id ?? '');
             const latitude = Number(driver.lat);
             const longitude = Number(driver.lon);
+            const locationTime = Date.parse(driver.data);
             if (!key || !Number.isFinite(latitude) || !Number.isFinite(longitude) ||
-                Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {
+                Math.abs(latitude) > 90 || Math.abs(longitude) > 180 ||
+                !Number.isFinite(locationTime) || Date.now() - locationTime > DRIVER_LOCATION_MAX_AGE_MS) {
                 return;
             }
 

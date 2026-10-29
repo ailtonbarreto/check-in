@@ -27,6 +27,31 @@ body {
     font-family: 'minha-fonte', sans-serif;
 }
 
+#spinner {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    inset: 0;
+    background: var(--color-text);
+    z-index: 2001;
+}
+
+#loading {
+    width: 60px;
+    height: 60px;
+    border: 8px solid #ffffff;
+    border-top-color: var(--color-btn);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .login {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(360px, 0.9fr);
@@ -146,6 +171,10 @@ body {
     font: inherit;
     font-weight: bold;
     transition: background-color 0.2s, transform 0.2s;
+}
+
+#start-btn:disabled {
+    cursor: wait;
 }
 
 #start-btn:hover {

@@ -10,6 +10,10 @@
 </head>
 
 <body>
+    <div id="spinner" role="status" aria-label="Entrando..." aria-hidden="true">
+        <div id="loading" aria-hidden="true"></div>
+    </div>
+
     <main class="login">
         <section class="welcome" aria-labelledby="welcome-title">
             <div class="brand-mark" aria-hidden="true">
@@ -56,11 +60,14 @@
         const loginForm = document.getElementById('passenger-login-form');
         const loginError = document.getElementById('login-error');
         const loginButton = document.getElementById('start-btn');
+        const spinner = document.getElementById('spinner');
 
         loginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             loginError.hidden = true;
             loginButton.disabled = true;
+            spinner.style.display = 'flex';
+            spinner.setAttribute('aria-hidden', 'false');
 
             try {
                 const apiBaseUrl = 'https://api-checkin-s376.onrender.com';
@@ -105,6 +112,8 @@
                     : error.message || 'Não foi possível entrar. Tente novamente.';
                 loginError.hidden = false;
             } finally {
+                spinner.style.display = 'none';
+                spinner.setAttribute('aria-hidden', 'true');
                 loginButton.disabled = false;
             }
         });
