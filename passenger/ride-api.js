@@ -64,7 +64,7 @@ window.RideApi = (() => {
         }
     }
 
-    function watchRideStatus(routeId, passengerId, showMessage) {
+    function watchRideStatus(routeId, passengerId, onStatusChange) {
         window.clearInterval(rideStatusInterval);
         rideStatusInterval = window.setInterval(async () => {
             try {
@@ -74,13 +74,13 @@ window.RideApi = (() => {
                 const result = await response.json();
                 if (result.status === 'aceita') {
                     window.clearInterval(rideStatusInterval);
-                    showMessage('O motorista aceitou sua corrida!');
+                    onStatusChange('aceita');
                 } else if (result.status === 'recusada') {
                     window.clearInterval(rideStatusInterval);
-                    showMessage('O motorista recusou. Escolha outro motorista no mapa e envie novamente.');
+                    onStatusChange('recusada');
                 } else if (result.status === 'cancelada') {
                     window.clearInterval(rideStatusInterval);
-                    showMessage('Esta solicitação de corrida foi cancelada.');
+                    onStatusChange('cancelada');
                 }
             } catch (error) {
                 console.error('Erro ao consultar o status da corrida:', error);

@@ -177,6 +177,7 @@ window.RideOffers = {
                     rideFeedback.textContent = "Corrida aceita. O passageiro foi avisado.";
                     acceptRideButton.textContent = "Corrida aceita";
                     currentRideId = null;
+                    rideCard.hidden = true;
                     try {
                         await onRideAccepted(acceptedRide);
                     } catch (error) {

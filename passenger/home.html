@@ -16,6 +16,17 @@
     <main class="app">
         <section class="map-section" aria-label="Mapa da região">
             <div id="map" role="application" aria-label="Mapa interativo"></div>
+            <section id="ride-popup" class="ride-popup" role="status" aria-live="polite" hidden>
+                <button id="ride-popup-close" class="ride-popup-close" type="button" aria-label="Fechar aviso">×</button>
+                <div id="ride-popup-spinner" class="ride-popup-spinner" aria-hidden="true" hidden></div>
+                <h2 id="ride-popup-title"></h2>
+                <p id="ride-popup-message"></p>
+                <div id="ride-popup-actions" class="ride-popup-actions" hidden>
+                    <button id="ride-popup-confirm" class="ride-popup-confirm" type="button">Solicitar corrida</button>
+                    <button id="ride-popup-cancel" class="ride-popup-cancel" type="button">Escolher outro</button>
+                </div>
+                <button id="ride-popup-retry" class="ride-popup-confirm" type="button" hidden></button>
+            </section>
 
             <button class="icon-button menu-button" id="menu-button" type="button" aria-label="Abrir menu"
                 aria-expanded="false" aria-controls="menu">

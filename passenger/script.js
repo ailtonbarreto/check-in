@@ -11,6 +11,14 @@ const toast = document.getElementById('toast');
 const destinationInput = document.getElementById('destination');
 const suggestionList = document.getElementById('autocomplete-list');
 const greeting = document.getElementById('greeting');
+const ridePopup = document.getElementById('ride-popup');
+const ridePopupTitle = document.getElementById('ride-popup-title');
+const ridePopupMessage = document.getElementById('ride-popup-message');
+const ridePopupSpinner = document.getElementById('ride-popup-spinner');
+const ridePopupActions = document.getElementById('ride-popup-actions');
+const ridePopupConfirm = document.getElementById('ride-popup-confirm');
+const ridePopupCancel = document.getElementById('ride-popup-cancel');
+const ridePopupRetry = document.getElementById('ride-popup-retry');
 const apiBaseUrl = window.RideApi.baseUrl;
 let toastTimeout;
 let locationMarker;
@@ -19,6 +27,10 @@ let routeLine;
 let currentPosition = null;
 let selectedDriverId = null;
 let selectedDriverKey = null;
+let pendingRide = null;
+let sendingRideRequest = false;
+let rideAwaitingResponse = false;
+let selectedDriverName = '';
 let initialMapFramed = false;
 let hasFittedUserAndDrivers = false;
 const driverMarkers = new Map();
@@ -43,6 +55,40 @@ function showMessage(message) {
     toast.classList.add('is-visible');
     window.clearTimeout(toastTimeout);
     toastTimeout = window.setTimeout(() => toast.classList.remove('is-visible'), 2800);
+}
+
+function atualizarPopupCorrida({ title, message, loading = false, actions = false, confirmText = 'Solicitar corrida',
+    retryText = null }) {
+    ridePopupTitle.textContent = title;
+    ridePopupMessage.textContent = message;
+    ridePopupSpinner.hidden = !loading;
+    ridePopupActions.hidden = !actions;
+    ridePopupConfirm.textContent = confirmText;
+    ridePopupConfirm.disabled = loading;
+    ridePopupCancel.disabled = loading;
+    ridePopupRetry.hidden = !retryText;
+    if (retryText) ridePopupRetry.textContent = retryText;
+    ridePopup.hidden = false;
+}
+
+function mostrarEtapaEscolherMotorista() {
+    atualizarPopupCorrida({
+        title: 'Escolha um motorista',
+        message: 'Toque em um carro no mapa para ver os detalhes e solicitar a corrida.'
+    });
+}
+
+function solicitarMotoristaSelecionado() {
+    if (!pendingRide || !selectedDriverId || sendingRideRequest) return;
+    enviarSolicitacaoCorrida(selectedDriverName).catch((error) => {
+        console.error('Erro ao enviar solicitação de corrida:', error);
+        atualizarPopupCorrida({
+            title: 'Não foi possível enviar',
+            message: error.message || 'Tente novamente ou escolha outro motorista.',
+            actions: true,
+            confirmText: 'Tentar novamente'
+        });
+    });
 }
 
 function clearSuggestions() {
@@ -233,19 +279,32 @@ async function plotarMotoristasNoMapa() {
                 marker = L.marker(position, { icon: driverIcon })
                     .bindPopup(popup)
                     .addTo(map);
-                marker.on('click', () => {
-                    const numericDriverId = driver.id_motorista ?? driver.motorista_id ?? driver.driver_id ??
-                        (/^\d+$/.test(String(driver.pessoa)) ? driver.pessoa : null);
-                    if (numericDriverId === null || !Number.isInteger(Number(numericDriverId))) {
-                        showMessage('Localização recebida, mas falta o ID numérico do motorista no backend.');
-                        return;
-                    }
-                    selectedDriverId = String(numericDriverId);
-                    selectedDriverKey = key;
-                    showMessage(`Motorista ${label} selecionado para sua corrida.`);
-                });
                 driverMarkers.set(key, marker);
             }
+
+            marker.off('click').on('click', () => {
+                if (!pendingRide) {
+                    showMessage('Trace uma rota antes de escolher um motorista.');
+                    return;
+                }
+
+                const numericDriverId = driver.id_motorista ?? driver.motorista_id ?? driver.driver_id ??
+                    (/^\d+$/.test(String(driver.pessoa)) ? driver.pessoa : null);
+                if (numericDriverId === null || !Number.isInteger(Number(numericDriverId))) {
+                    showMessage('Localização recebida, mas falta o ID numérico do motorista no backend.');
+                    return;
+                }
+                if (sendingRideRequest) return;
+
+                selectedDriverId = String(numericDriverId);
+                selectedDriverKey = key;
+                selectedDriverName = String(label);
+                atualizarPopupCorrida({
+                    title: `Motorista ${selectedDriverName}`,
+                    message: 'Deseja enviar sua solicitação para este motorista?',
+                    actions: true
+                });
+            });
         });
 
         driverMarkers.forEach((marker, id) => {
@@ -255,7 +314,11 @@ async function plotarMotoristasNoMapa() {
                 if (selectedDriverKey === id) {
                     selectedDriverId = null;
                     selectedDriverKey = null;
-                    showMessage('O motorista selecionado ficou indisponível. Escolha outro no mapa.');
+                    selectedDriverName = '';
+                    if (pendingRide && !rideAwaitingResponse) {
+                        mostrarEtapaEscolherMotorista();
+                        showMessage('O motorista selecionado ficou indisponível. Escolha outro no mapa.');
+                    }
                 }
             }
         });
@@ -282,18 +345,19 @@ async function resolverDestino(query) {
 
 async function criarRota(destination) {
     clearSuggestions();
-    if (!selectedDriverId) {
-        throw new Error('Selecione um motorista no mapa antes de solicitar a corrida.');
+    if (sendingRideRequest || rideAwaitingResponse) {
+        throw new Error('Aguarde a resposta do motorista antes de traçar outra rota.');
     }
 
     const passengerId = localStorage.getItem('id_passageiro');
     if (!passengerId || !Number.isInteger(Number(passengerId))) {
         throw new Error('Sua sessão não contém um ID válido de passageiro. Entre novamente.');
     }
-    if (!selectedDriverId || !Number.isInteger(Number(selectedDriverId))) {
-        throw new Error('O motorista selecionado não tem um ID válido. Escolha outro no mapa.');
-    }
 
+    pendingRide = null;
+    selectedDriverId = null;
+    selectedDriverKey = null;
+    ridePopup.hidden = true;
     showMessage('Obtendo sua localização...');
 
     const origin = await obterLocalizacao();
@@ -335,24 +399,92 @@ async function criarRota(destination) {
     map.fitBounds(routeLine.getBounds(), { padding: [36, 36] });
     const distance = (route.distance / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
     const duration = Math.round(route.duration / 60);
-    showMessage('Enviando solicitação de corrida...');
-
-    const rideId = await window.RideApi.sendRide({
-        id_passageiro: Number(passengerId),
-        id_motorista: Number(selectedDriverId),
-        origem: 'Minha localização',
-        lat: origin[0],
-        lon: origin[1],
-        destino: destination.name,
-        destino_lat: destination.lat,
-        destino_lon: destination.lon,
-        distancia: Number((route.distance / 1000).toFixed(1)),
-        duracao: duration
-    });
-
-    window.RideApi.watchRideStatus(rideId, passengerId, showMessage);
-    showMessage(`Corrida enviada · ${distance} km · cerca de ${duration} min`);
+    pendingRide = {
+        passengerId,
+        distance,
+        duration,
+        ride: {
+            id_passageiro: Number(passengerId),
+            origem: 'Minha localização',
+            lat: origin[0],
+            lon: origin[1],
+            destino: destination.name,
+            destino_lat: destination.lat,
+            destino_lon: destination.lon,
+            distancia: Number((route.distance / 1000).toFixed(1)),
+            duracao: duration
+        }
+    };
+    mostrarEtapaEscolherMotorista();
 }
+
+async function enviarSolicitacaoCorrida(driverName) {
+    if (!pendingRide || sendingRideRequest) return;
+    if (!Number.isInteger(Number(selectedDriverId))) {
+        throw new Error('O motorista selecionado não tem um ID válido. Escolha outro no mapa.');
+    }
+
+    const rideToSend = pendingRide;
+    sendingRideRequest = true;
+    atualizarPopupCorrida({
+        title: 'Enviando solicitação',
+        message: `Enviando sua solicitação para ${driverName}...`,
+        loading: true
+    });
+    try {
+        const rideId = await window.RideApi.sendRide({
+            ...rideToSend.ride,
+            id_motorista: Number(selectedDriverId)
+        });
+        rideAwaitingResponse = true;
+        atualizarPopupCorrida({
+            title: 'Solicitação enviada',
+            message: `Enviamos sua solicitação para ${driverName}. Aguarde a resposta do motorista.`,
+            loading: true
+        });
+        window.RideApi.watchRideStatus(rideId, rideToSend.passengerId, (status) => {
+            rideAwaitingResponse = false;
+            if (status === 'aceita') {
+                pendingRide = null;
+                atualizarPopupCorrida({
+                    title: 'Corrida aceita!',
+                    message: `${driverName} aceitou sua solicitação.`
+                });
+            } else if (status === 'recusada') {
+                atualizarPopupCorrida({
+                    title: 'Solicitação recusada',
+                    message: `${driverName} não aceitou. Você pode escolher outro motorista.`,
+                    retryText: 'Escolher outro motorista'
+                });
+            } else if (status === 'cancelada') {
+                atualizarPopupCorrida({
+                    title: 'Corrida cancelada',
+                    message: 'Esta solicitação foi cancelada. Você pode escolher outro motorista.',
+                    retryText: 'Escolher outro motorista'
+                });
+            }
+        });
+    } finally {
+        sendingRideRequest = false;
+    }
+}
+
+ridePopupConfirm.addEventListener('click', solicitarMotoristaSelecionado);
+ridePopupCancel.addEventListener('click', () => {
+    selectedDriverId = null;
+    selectedDriverKey = null;
+    selectedDriverName = '';
+    mostrarEtapaEscolherMotorista();
+});
+ridePopupRetry.addEventListener('click', () => {
+    selectedDriverId = null;
+    selectedDriverKey = null;
+    selectedDriverName = '';
+    mostrarEtapaEscolherMotorista();
+});
+document.getElementById('ride-popup-close').addEventListener('click', () => {
+    ridePopup.hidden = true;
+});
 
 document.getElementById('menu-button').addEventListener('click', (event) => {
     const button = event.currentTarget;
