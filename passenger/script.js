@@ -12,6 +12,7 @@ const destinationInput = document.getElementById('destination');
 const suggestionList = document.getElementById('autocomplete-list');
 const greeting = document.getElementById('greeting');
 const apiBaseUrl = 'https://api-checkin-s376.onrender.com';
+const routeInsertUrl = `${apiBaseUrl}/insert_route`;
 const rideApiUrl = `${apiBaseUrl}/oferta_corrida`;
 const rideStatusUrl = rideApiUrl;
 let toastTimeout;
@@ -288,17 +289,53 @@ async function enviarSolicitacaoCorrida(ride) {
 
     sendingRide = true;
     try {
+        const insertResponse = await fetch(routeInsertUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id_passageiro: ride.id_passageiro,
+                id_motorista: ride.id_motorista,
+                lat_origem: ride.lat,
+                lon_origem: ride.lon,
+                lat_destino: ride.destino_lat,
+                lon_destino: ride.destino_lon,
+                phase: 1
+            })
+        });
+        let insertResult;
+        try {
+            insertResult = await insertResponse.json();
+        } catch {
+            throw new Error('O servidor retornou uma resposta inválida ao salvar a rota.');
+        }
+        if (!insertResponse.ok) {
+            const detail = insertResult && (insertResult.error || insertResult.detail);
+            const errorMessage = Array.isArray(detail)
+                ? detail.map((item) => item.msg).filter(Boolean).join(' ')
+                : detail;
+            throw new Error(errorMessage || `A API de rotas respondeu com status ${insertResponse.status}.`);
+        }
+        const routeId = insertResult?.data?.insertId ?? insertResult?.insertId ?? insertResult?.id_rota;
+        if (routeId === undefined || routeId === null || routeId === 0) {
+            throw new Error('A API salvou a rota, mas não retornou o ID necessário para enviar a oferta ao motorista.');
+        }
+
         const response = await fetch(rideApiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(ride)
+            body: JSON.stringify({ ...ride, id_rota: routeId })
         });
-        const result = await response.json();
-        if (!response.ok || !result || result.success !== true || result.id_rota === undefined) {
-            const message = result && typeof result.message === 'string' ? result.message : null;
-            throw new Error(message || `A API de corridas respondeu com status ${response.status}.`);
+        let result;
+        try {
+            result = await response.json();
+        } catch {
+            throw new Error('O servidor retornou uma resposta inválida ao enviar a oferta ao motorista.');
         }
-        return result.id_rota;
+        if (!response.ok || !result || result.success !== true) {
+            const detail = result && (result.message || result.error || result.detail);
+            throw new Error(detail || `A API de corridas respondeu com status ${response.status}.`);
+        }
+        return routeId;
     } finally {
         sendingRide = false;
     }
