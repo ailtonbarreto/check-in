@@ -66,26 +66,36 @@ window.RideApi = (() => {
 
     function watchRideStatus(routeId, passengerId, onStatusChange) {
         window.clearInterval(rideStatusInterval);
-        rideStatusInterval = window.setInterval(async () => {
+        let checkingStatus = false;
+        const checkStatus = async () => {
+            if (checkingStatus) return;
+            checkingStatus = true;
+            let status;
             try {
                 const query = new URLSearchParams({ id_passageiro: passengerId });
-                const response = await fetch(`${rideApiUrl}/${encodeURIComponent(routeId)}?${query}`);
+                const response = await fetch(`${rideApiUrl}/${encodeURIComponent(routeId)}?${query}`, {
+                    cache: 'no-store'
+                });
                 if (!response.ok) throw new Error(`A API de corridas respondeu com status ${response.status}.`);
                 const result = await response.json();
-                if (result.status === 'aceita') {
-                    window.clearInterval(rideStatusInterval);
-                    onStatusChange('aceita');
-                } else if (result.status === 'recusada') {
-                    window.clearInterval(rideStatusInterval);
-                    onStatusChange('recusada');
-                } else if (result.status === 'cancelada') {
-                    window.clearInterval(rideStatusInterval);
-                    onStatusChange('cancelada');
-                }
+                const ride = result?.data?.ride ?? result?.data ?? result?.ride ?? result;
+                const rawStatus = ride?.status ?? ride?.status_corrida ?? ride?.situacao;
+                if (typeof rawStatus === 'string') status = rawStatus.trim().toLowerCase();
             } catch (error) {
                 console.error('Erro ao consultar o status da corrida:', error);
+            } finally {
+                checkingStatus = false;
             }
-        }, 5000);
+
+            if (status === 'aceita' || status === 'recusada' || status === 'cancelada') {
+                window.clearInterval(rideStatusInterval);
+                rideStatusInterval = null;
+                onStatusChange(status);
+            }
+        };
+
+        rideStatusInterval = window.setInterval(checkStatus, 5000);
+        checkStatus();
     }
 
     return {
