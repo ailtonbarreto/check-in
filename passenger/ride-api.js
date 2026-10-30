@@ -43,20 +43,31 @@ window.RideApi = (() => {
                 throw new Error('A API salvou a rota, mas não retornou o ID necessário para enviar a oferta ao motorista.');
             }
 
+            const offer = {
+                ...ride,
+                id_rota: routeId,
+                lat_origem: ride.lat,
+                lon_origem: ride.lon,
+                lat_destino: ride.destino_lat,
+                lon_destino: ride.destino_lon
+            };
             const response = await fetch(rideApiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...ride, id_rota: routeId })
+                body: JSON.stringify(offer)
             });
             let result;
             try {
                 result = await response.json();
             } catch {
-                throw new Error('O servidor retornou uma resposta inválida ao enviar a oferta ao motorista.');
+                throw new Error(`A API de corridas retornou uma resposta inválida ao registrar a oferta (HTTP ${response.status}).`);
             }
             if (!response.ok || !result || result.success !== true) {
                 const detail = result && (result.message || result.error || result.detail);
-                throw new Error(detail || `A API de corridas respondeu com status ${response.status}.`);
+                throw new Error(
+                    `Não foi possível registrar a oferta de corrida (HTTP ${response.status}): ` +
+                    (detail || 'a API recusou a solicitação.')
+                );
             }
             return routeId;
         } finally {
@@ -94,7 +105,7 @@ window.RideApi = (() => {
             }
         };
 
-        rideStatusInterval = window.setInterval(checkStatus, 5000);
+        rideStatusInterval = window.setInterval(checkStatus, 3000);
         checkStatus();
     }
 

@@ -74,8 +74,7 @@ window.RideOffers = {
         }
 
         function normalizarCorrida(payload) {
-            let data = payload;
-            if (data && !Array.isArray(data) && data.data !== undefined) data = data.data;
+            let data = payload?.data?.ride ?? payload?.data ?? payload?.ride ?? payload;
             if (data && !Array.isArray(data) && data.ride !== undefined) data = data.ride;
             if (Array.isArray(data)) data = data[0];
             if (!data || typeof data !== "object") {
@@ -215,6 +214,8 @@ window.RideOffers = {
             rideSocket = socket;
 
             socket.addEventListener("open", () => {
+                rideFeedback.textContent = "Conectado. Aguardando ofertas de corrida...";
+                rideFeedback.classList.remove("is-error");
                 rideHeartbeatInterval = window.setInterval(() => {
                     if (socket.readyState === WebSocket.OPEN) socket.send("ping");
                 }, 25000);
@@ -223,16 +224,24 @@ window.RideOffers = {
             socket.addEventListener("message", (event) => {
                 try {
                     const message = JSON.parse(event.data);
-                    if (message.event === "new_ride" && message.ride) {
-                        mostrarOfertaCorrida(message.ride);
+                    const ride = message?.ride ?? message?.data?.ride ?? message?.data;
+                    const eventType = message?.event ?? message?.type;
+                    if (eventType === "new_ride" && ride) {
+                        const targetDriverId = ride.id_motorista ?? ride.motorista_id ?? ride.driver_id;
+                        if (targetDriverId !== undefined && String(targetDriverId) !== String(driverId)) return;
+                        mostrarOfertaCorrida(ride);
                     }
                 } catch (error) {
                     console.error("Erro ao processar oferta recebida pelo WebSocket:", error);
+                    rideFeedback.textContent = "Não foi possível exibir a oferta recebida.";
+                    rideFeedback.classList.add("is-error");
                 }
             });
 
             socket.addEventListener("error", (error) => {
                 console.error("Erro na conexão de ofertas de corrida:", error);
+                rideFeedback.textContent = "Falha na conexão com o servidor de ofertas. Tentando reconectar...";
+                rideFeedback.classList.add("is-error");
                 socket.close();
             });
 
@@ -240,6 +249,7 @@ window.RideOffers = {
                 window.clearInterval(rideHeartbeatInterval);
                 if (rideSocket === socket && !shuttingDown) {
                     rideSocket = null;
+                    rideFeedback.textContent = "Conexão encerrada. Tentando reconectar às ofertas...";
                     rideReconnectTimeout = window.setTimeout(conectarOfertasCorrida, 5000);
                 }
             });
