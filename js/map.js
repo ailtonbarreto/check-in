@@ -50,17 +50,15 @@ document.addEventListener("DOMContentLoaded", function () {
                     const id = pessoa.pessoa;
                     pessoasAtuais.add(id);
 
-                    let dataRegistro = new Date(pessoa.data);
-                    dataRegistro = new Date(dataRegistro.getTime() + (3 * 60 * 60 * 1000));
+                    const dataRegistro = new Date(pessoa.data).getTime();
+                    const diffSegundos = (agora.getTime() - dataRegistro) / 1000;
+                    const online = Number.isFinite(dataRegistro) && diffSegundos <= 30;
 
-                    let diffSegundos = (agora - dataRegistro) / 1000;
-                    if (diffSegundos < 0) diffSegundos = 0;
-
-                    // Ícone verde se dentro de 30 segundos, senão laranja
-                    const icon = diffSegundos > 30 ? iconLaranja() : iconVerde();
+                    // Ícone verde se dentro de 30 segundos, senão vermelho
+                    const icon = online ? iconVerde() : iconLaranja();
 
                     // Conta motoristas online (<= 30 segundos)
-                    if (diffSegundos <= 30) {
+                    if (online) {
                         qtdOnline++;
                     }
 
