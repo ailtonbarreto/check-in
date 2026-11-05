@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const routeProgress = document.getElementById("route-progress");
     const routeProgressFill = document.getElementById("route-progress-fill");
     const routeProgressLabel = document.getElementById("route-progress-label");
-    const apiBaseUrl = "https://api-checkin-s376.onrender.com";
+    const apiBaseUrl = "https://api-checkin-178204007473.southamerica-east1.run.app";
     let selecionarDestino = null;
     let iniciarOrientacaoBussola = null;
     let iniciarRotaParaPassageiro = null;
