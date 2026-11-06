@@ -51,6 +51,7 @@
     <script>
         const loginForm = document.getElementById('login-form');
         const loginButton = document.getElementById('start-btn');
+        const body = document.body;
 
         loginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -96,6 +97,7 @@
                 localStorage.setItem('id_motorista', String(driver.id));
                 localStorage.setItem('nome', driver.user || driver.nome || user);
                 sessionStorage.setItem('logon', 'ok');
+                body.style.display = 'none';
                 window.location.href = "route.html";
             } catch (error) {
                 console.error('Erro ao entrar como motorista:', error);
