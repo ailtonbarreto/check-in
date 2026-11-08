@@ -1,5 +1,5 @@
 window.RideApi = (() => {
-    const apiBaseUrl = 'https://api-checkin-178204007473.southamerica-east1.run.app';
+    const apiBaseUrl = 'https://api-checkin-138245954466.southamerica-west1.run.app';
     const routeInsertUrl = `${apiBaseUrl}/insert_route`;
     const rideApiUrl = `${apiBaseUrl}/oferta_corrida`;
     let sendingRide = false;

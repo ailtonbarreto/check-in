@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function plotarPessoasNoMapa() {
 
-        fetch("https://api-checkin-178204007473.southamerica-east1.run.app/localizacoes")
+        fetch("https://api-checkin-138245954466.southamerica-west1.run.app//localizacoes")
             .then(response => response.json())
             .then(response => {
 
@@ -97,7 +97,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     async function atualizarUsuariosAtivos() {
         try {
-            const response = await fetch("https://api-checkin-178204007473.southamerica-east1.run.app/usuarios_ativos");
+            const response = await fetch("https://api-checkin-138245954466.southamerica-west1.run.app/usuarios_ativos");
 
             const data = await response.json();
 
