@@ -1011,7 +1011,7 @@ document.addEventListener("DOMContentLoaded", function () {
             ultimaLatitude = lat;
             ultimaLongitude = lon;
             statusDiv.textContent = pos.simulada
-                ? "Simulação da rota em andamento"
+                ? "Rota em andamento"
                 : "Localização atualizada";
             atualizarProgressoRota();
 
